@@ -1,5 +1,11 @@
+/**
+ * @file 출신 설정 데이터. name/subtitle/icon/text는 설명, item은 시작 소지품입니다.
+ * stats의 might/wit/spirit는 각각 무력/통찰/의지의 Lv.1 보정치이며 Character가 성장분을 더합니다.
+ */
+
 // 출신 설명과 능력치. 판정 규칙은 domain/skill-check.mjs에 있습니다.
 export const ORIGINS = {
+  // 기사: 무력 중심. 전투는 가장 높은 능력치를 자동 사용하므로 기본 공격에도 강점이 반영됩니다.
   warden: {
     name: "서약의 기사",
     subtitle: "부러진 검에도 맹세는 남는다",
@@ -12,6 +18,7 @@ export const ORIGINS = {
     item: "금이 간 기사 인장",
     text: "해체된 회색 근위대의 마지막 종자. 검과 방패에 익숙하며, 왕국이 버린 맹세를 아직 기억한다.",
   },
+  // 서기관: 통찰 중심, 의지도 높은 출신. 무력이 0이어도 통찰로 전투할 수 있습니다.
   scribe: {
     name: "이름의 서기관",
     subtitle: "지워진 글자에도 흔적은 남는다",
@@ -24,6 +31,7 @@ export const ORIGINS = {
     item: "은실로 꿰맨 명부",
     text: "성흔 수도원에서 추방된 기록자. 이름과 기억을 엮는 마법을 배웠지만, 스승의 이름은 끝내 구하지 못했다.",
   },
+  // 길잡이: 세 능력치가 고른 탐색형 출신입니다.
   ranger: {
     name: "변경의 길잡이",
     subtitle: "지도 밖에도 길은 이어진다",
@@ -38,6 +46,7 @@ export const ORIGINS = {
   },
 };
 
+// 규칙에서 쓰는 영문 키를 화면용 한국어 이름으로 바꿉니다. 키를 바꾸면 판정 데이터도 함께 바꿔야 합니다.
 export const STAT_NAMES = {
   might: "무력",
   wit: "통찰",

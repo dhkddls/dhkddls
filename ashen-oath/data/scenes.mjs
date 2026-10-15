@@ -1,5 +1,16 @@
+/**
+ * @file 초반부 장면 사전. 객체 키가 장면 ID이며 choice.next가 이동할 장면 ID를 가리킵니다.
+ * chapter/title/place/quote/paragraphs는 표시 내용, ending은 해당 막의 종료 표시입니다.
+ * 선택지: id는 행동 ID, label/detail은 화면 문구, check는 stat과 dc(난이도)입니다.
+ * clue는 판정 성공 시 단서, success/failure는 결과 문장, damage는 실패 피해, add는 소지품입니다.
+ * unvisited는 아직 방문하지 않은 조사 장소만 허용합니다. v1 저장은 label로 복구하므로 기존 문구를 보존합니다.
+ */
+
+import { MIDGAME_SCENES } from "./midgame-scenes.mjs";
+
 // 장면과 선택지 데이터. label은 기존 저장 기록을 복구하는 데에도 사용됩니다.
 export const SCENES = {
+  // 나루 도입: 세계의 이상 현상을 소개하고 첫 의지 판정을 선택할 수 있습니다.
   arrival: {
     chapter: "서막 · 추수 끝의 달",
     title: "종이 울리지 않는 마을",
@@ -36,6 +47,7 @@ export const SCENES = {
       },
     ],
   },
+  // 여관: 세 조사 장소로 분기합니다. 방문 제한은 데이터가 아니라 Adventure가 검사합니다.
   inn: {
     chapter: "제1장 · 마지막 불씨",
     title: "빈 의자에 앉은 손님",
@@ -67,6 +79,7 @@ export const SCENES = {
       },
     ],
   },
+  // 예배당: 사제의 증언 또는 장례문으로 사건의 원인을 조사합니다.
   chapel: {
     chapter: "제1장 · 금이 간 신앙",
     title: "은종 아래의 고백",
@@ -113,6 +126,7 @@ export const SCENES = {
       },
     ],
   },
+  // 서고: 기록 조사와 구조 행동 중 출신의 강점에 맞게 선택합니다.
   archive: {
     chapter: "제1장 · 지워진 기록",
     title: "죽은 자의 장부, 산 자의 이름",
@@ -159,6 +173,7 @@ export const SCENES = {
       },
     ],
   },
+  // 강가: 교단 밖의 증인과 왕도 인장 단서를 제공합니다.
   river: {
     chapter: "제1장 · 안개 속의 노래",
     title: "강은 이름을 돌려준다",
@@ -205,6 +220,7 @@ export const SCENES = {
       },
     ],
   },
+  // 광장: 두 번째 조사 또는 지하 진입. 이미 방문한 장소는 목록에서 빠집니다.
   crossroads: {
     chapter: "제1장 · 새벽까지 두 시간",
     title: "흩어진 증언을 모아",
@@ -245,6 +261,7 @@ export const SCENES = {
       },
     ],
   },
+  // 지하 위기: 판정 실패로 피해를 입어도 마지막 가치 선택에는 도달할 수 있습니다.
   crypt: {
     chapter: "제2장 · 이름을 먹는 것",
     title: "종의 안쪽에서",
@@ -290,6 +307,7 @@ export const SCENES = {
       },
     ],
   },
+  // 첫 서약: 주사위 없이 세 결말을 선택합니다. 어떤 단서를 얻었든 고를 수 있습니다.
   heart: {
     chapter: "제2장 · 첫 번째 서약",
     title: "무엇을 남길 것인가",
@@ -321,6 +339,7 @@ export const SCENES = {
       },
     ],
   },
+  // 봉인 복구 결말. ending은 첫 막의 종료이며 canContinue를 통해 중반부가 이어집니다.
   "ending-seal": {
     chapter: "제1막 완료 · 기억하는 사람들",
     title: "다시 울리는 종",
@@ -332,6 +351,7 @@ export const SCENES = {
       "사람들이 돌아간 뒤, 종 안쪽에서 당신은 작은 왕도 인장을 발견한다. 「제9보관소 · 회수 대상」. 누군가는 이 일을 예상하고 있었다. 다음 길은 왕도로 이어진다.",
     ],
   },
+  // 종 파괴 결말. 후속 경로의 동기는 JOURNEY_ROUTES에서 다르게 설명합니다.
   "ending-dawn": {
     chapter: "제1막 완료 · 종 없는 새벽",
     title: "침묵 너머의 노래",
@@ -343,6 +363,7 @@ export const SCENES = {
       "왕관과 교단은 종을 부순 일을 묵과하지 않을 것이다. 강 건너에서 검은 봉투가 도착한다. 「당신과 같은 선택을 한 마을이 또 있습니다. 별무덤 주조소로 오십시오.」",
     ],
   },
+  // 기억을 대가로 낸 결말. 일 년의 유예와 잃은 기억의 추적을 남깁니다.
   "ending-price": {
     chapter: "제1막 완료 · 남겨진 대가",
     title: "이름 없는 온기",
@@ -354,4 +375,6 @@ export const SCENES = {
       "수첩 첫 장에는 당신이 쓰지 않은 글씨가 있다. 「제9보관소에는 내어준 기억도 남아 있다.」 당신은 빈자리를 되찾기 위해 왕도로 향한다.",
     ],
   },
+  // 중반 장면을 같은 장면 사전에 합쳐 next ID로 두 막을 조회할 수 있게 합니다.
+  ...MIDGAME_SCENES,
 };

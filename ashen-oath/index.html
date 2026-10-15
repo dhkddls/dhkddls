@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ko">
+  <!-- 문서 설정: 한국어·모바일 화면·어두운 테마를 선언하고 공통 스타일을 불러옵니다. -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,17 +9,20 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- 상단 탐색. act-label은 StoryView가 현재 막에 맞춰 갱신합니다. -->
     <header class="topbar">
       <a class="brand" href="./" aria-label="잿빛 서약 처음 화면"
         ><span class="sigil">♜</span
         ><span>잿빛 서약<small>THE ASHEN OATH</small></span></a
       >
       <div class="edition">
-        A SOLO TABLETOP ADVENTURE <span>서막 · 01</span>
+        A SOLO TABLETOP ADVENTURE <span id="act-label">제1막 · 서리여울</span>
       </div>
       <button id="help" class="quiet">플레이 안내 <span>↗</span></button>
     </header>
+    <!-- 게임 본체. 정적인 레이아웃은 HTML에 두고 진행에 따른 내용은 각 View가 채웁니다. -->
     <main>
+      <!-- 첫 화면의 작품 소개. 실제 모험 장면의 제목과는 구분됩니다. -->
       <section class="masthead">
         <div>
           <p class="eyebrow">엘드라 연대기 / 재력 317년</p>
@@ -26,10 +30,12 @@
         </div>
         <p class="intro-copy">
           한 사람의 여행자, 스무 면의 주사위.<br />당신의 선택으로 쓰는 변경의
-          첫 번째 밤.
+          첫 번째 밤과 그 너머의 여정.
         </p>
       </section>
+      <!-- 큰 화면은 캐릭터·모험·기록서의 세 열, 작은 화면은 CSS 미디어 쿼리로 재배치합니다. -->
       <div class="game-layout">
+        <!-- CharacterView 영역: 출신·기력·능력치·경험치·소지품을 표시합니다. id는 코드와 연결되므로 함께 관리합니다. -->
         <aside class="character-panel">
           <p class="eyebrow">YOUR CHARACTER</p>
           <div class="portrait" aria-hidden="true">
@@ -48,23 +54,34 @@
           </div>
           <div class="health-track"><div id="health-bar"></div></div>
           <div id="stats" class="stats"></div>
+          <!-- 경험치는 현재 레벨 구간 기준입니다. 최고 레벨에서는 분모 대신 누적 경험치를 표시합니다. -->
+          <div class="progression">
+            <div class="experience-label">
+              <strong id="player-level">Lv.1</strong
+              ><span id="experience-value">0 / 80 XP</span>
+            </div>
+            <div class="experience-track"><div id="experience-bar"></div></div>
+          </div>
           <p class="eyebrow inventory-label">소지품</p>
           <ul id="inventory" class="inventory"></ul>
           <div class="character-foot">
             “이름을 기억하는 한,<br />아직 끝난 것은 아니다.”
           </div>
         </aside>
+        <!-- 이야기·판정·전투·선택지를 담는 중앙 영역입니다. -->
         <section class="adventure" aria-label="모험 본문">
           <div
             class="scene-art"
             role="img"
             aria-label="별 아래 서 있는 서리여울의 종탑과 안개에 잠긴 중세 마을"
           >
+            <!-- 직접 그린 마을 풍경. viewBox는 내부 좌표계이고 preserveAspectRatio는 영역에 맞춰 비율을 유지하며 자릅니다. -->
             <svg
               viewBox="0 0 900 350"
               preserveAspectRatio="xMidYMid slice"
               aria-hidden="true"
             >
+              <!-- 이후 도형에서 url(#sky)처럼 참조하는 하늘·안개·달빛 그라데이션입니다. -->
               <defs>
                 <linearGradient id="sky" x2="0" y2="1">
                   <stop stop-color="#101f25" />
@@ -100,6 +117,7 @@
                 fill="#1c302f"
                 d="m0 280 110-63 76 35 108-51 72 48 139-42 120 47 99-44 176 52v88H0z"
               />
+              <!-- 같은 색으로 묶은 종탑과 마을 건물 실루엣입니다. 좌표는 그림 전용이며 게임 위치·이동 규칙과 무관합니다. -->
               <g fill="#142321">
                 <path
                   d="M105 282v-62l42-31 40 31v62zm99 10v-54l35-32 36 32v54zm362-12v-75l44-31 42 31v75zm85 23v-58l37-29 40 29v58zm-308-4V126h65v173z"
@@ -144,6 +162,7 @@
               ><span class="coordinates">E 07° · N 43°</span>
             </div>
           </div>
+          <!-- StoryView가 갱신하는 장면. tabindex=-1인 제목은 일반 Tab 순서에 넣지 않고 장면 전환 시 초점을 받습니다. -->
           <div class="story-content">
             <div class="chapter-line">
               <p id="chapter" class="eyebrow"></p>
@@ -156,21 +175,36 @@
               role="status"
               hidden
             ></div>
+            <!-- 대표 대사가 없는 장면에서는 quote를 숨기며, 본문과 선택지 내용은 textContent로 안전하게 생성합니다. -->
             <blockquote id="quote"></blockquote>
             <div id="prose" class="prose"></div>
+            <!-- CombatView 영역: 전투 시작 전에는 숨기고, 전투 중에는 일반 이야기 선택지 대신 행동 버튼을 보여줍니다. -->
+            <section
+              id="combat-panel"
+              class="combat-panel"
+              aria-label="전투"
+              hidden
+            ></section>
+            <!-- 가능한 선택지만 StoryView가 버튼으로 생성합니다. 실제 허용 여부는 Adventure도 다시 검사합니다. -->
             <div id="choices" class="choices"></div>
+            <!-- 막 종료 때만 표시합니다. 첫 결말은 내보내기와 중반 계속하기, 중반 종료는 내보내기만 가능합니다. -->
             <div id="ending-tools" hidden>
-              <p class="ending-note">
+              <p id="ending-note" class="ending-note">
                 첫 번째 모험이 끝났습니다. 이 선택은 더 큰 이야기의 시작입니다.
               </p>
               <button id="export" class="primary">모험 기록 내려받기 ↓</button>
+              <button id="continue-journey" class="primary" hidden>
+                중반부로 떠나기 →
+              </button>
             </div>
           </div>
+          <!-- 저장 상태와 다시 시작. 저장 권한이 없어도 게임을 계속할 수 있으며 여기에서 상태를 알립니다. -->
           <footer class="story-footer">
             <span>✧ <span id="save-status">선택할 때마다 자동 저장</span></span
             ><button id="restart" class="quiet">처음부터 다시</button>
           </footer>
         </section>
+        <!-- JournalView 영역. tablist/tab/tabpanel 역할은 키보드와 보조기술이 탭 구조를 이해하도록 합니다. -->
         <aside class="journal-panel">
           <div class="journal-heading">
             <span>여행자의 기록</span><span class="journal-mark">✧</span>
@@ -217,11 +251,12 @@
       </div>
       <footer class="page-footer">
         <span
-          >THE ASHEN OATH <span class="footer-separator">/</span> 제1막:
-          서리여울</span
+          >THE ASHEN OATH <span class="footer-separator">/</span
+          ><span id="footer-chapter">제1막: 서리여울</span></span
         ><span>이어폰 대신, 당신의 상상력을 준비하세요.</span>
       </footer>
     </main>
+    <!-- 출신 선택 모달. form method=dialog는 제출 시 JavaScript 없이도 이 창을 닫습니다. -->
     <dialog id="origin-dialog" aria-labelledby="origin-title">
       <form method="dialog">
         <button class="dialog-close quiet" aria-label="출신 선택 닫기">
@@ -236,6 +271,7 @@
       </p>
       <div id="origins"></div>
     </dialog>
+    <!-- 규칙 안내. 화면에 표시되는 설명이므로 수치 규칙을 바꿀 때 함께 확인합니다. -->
     <dialog id="help-dialog" aria-labelledby="help-title">
       <form method="dialog">
         <button class="dialog-close quiet" aria-label="안내 닫기">×</button>
@@ -251,9 +287,9 @@
         항상 성공, 1은 항상 실패입니다. 선택하면 주사위가 자동으로 굴러갑니다.
       </p>
       <p>
-        실패해도 이야기는 계속됩니다. 기력을 잃거나 단서를 놓칠 수 있으며,
-        기력이 1이 되면 부상 상태로 진행합니다. 마지막 선택은 주사위 없이 당신이
-        결정합니다.
+        초반부의 판정에 실패해도 이야기는 계속됩니다. 기력을 잃거나 단서를 놓칠
+        수 있으며, 기력이 1이 되면 부상 상태로 진행합니다. 마지막 선택은 주사위
+        없이 당신이 결정합니다.
       </p>
       <p>
         최대 두 장소를 조사할 수 있습니다. 오른쪽 기록서의 세계관은 언제든 읽을
@@ -261,7 +297,20 @@
         공간 제한 시에는 저장되지 않을 수 있습니다.
       </p>
       <p class="muted">소리·외부 이미지·계정 연결 없이 플레이할 수 있습니다.</p>
+      <p>
+        첫 결말 뒤 「중반부로 떠나기」를 선택하면 전투와 성장이 시작됩니다.
+        플레이어 레벨이 몬스터보다 높으면 경험치가 늘고, 낮으면 줄어듭니다. 한
+        레벨 차이마다 25% 보정하며 최소 25%, 최대 200%입니다. 레벨이 다르면
+        안내를 확인한 뒤 전투를 시작합니다.
+      </p>
+      <p>
+        공격·결정타·응급 처치·후퇴를 선택할 수 있습니다. 패배와 후퇴는 경험치가
+        없으며, 패배하면 기력 1로 야영지에 돌아옵니다. 야영지의 휴식은 기력을
+        전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대 기력과 능력치가
+        증가합니다.
+      </p>
     </dialog>
+    <!-- 초기화 확인. 취소하면 그대로 두고 확인 버튼만 새 모험을 요청합니다. -->
     <dialog id="restart-dialog" aria-labelledby="restart-title">
       <h2 id="restart-title">새로운 여정을 시작할까요?</h2>
       <p>현재 진행과 저장된 선택 기록이 지워집니다.</p>
@@ -270,6 +319,24 @@
         ><button id="confirm-restart" class="primary">새로 시작</button>
       </div>
     </dialog>
+    <!-- 레벨 차이 경고. 확인 전에는 게임 상태를 바꾸지 않고, 취소·Esc 시 대기 중 전투 요청을 버립니다. -->
+    <dialog
+      id="encounter-dialog"
+      aria-labelledby="encounter-title"
+      aria-describedby="encounter-warning encounter-reward"
+    >
+      <p class="eyebrow">전투 전 · 레벨 차이 안내</p>
+      <h2 id="encounter-title">전투를 시작할까요?</h2>
+      <p id="encounter-warning"></p>
+      <p id="encounter-reward"></p>
+      <div class="dialog-actions">
+        <button id="cancel-encounter" class="quiet">준비 후 돌아오기</button
+        ><button id="confirm-encounter" class="primary">
+          확인하고 전투 시작
+        </button>
+      </div>
+    </dialog>
+    <!-- 정적 HTML 요소 뒤에서 실행합니다. ES 모듈은 HTTP 서버로 제공해야 하며 app.mjs가 전체 앱을 시작합니다. -->
     <script type="module" src="app.mjs"></script>
   </body>
 </html>

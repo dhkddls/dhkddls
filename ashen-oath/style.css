@@ -1,3 +1,9 @@
+/*
+ * 화면 전용 스타일입니다. 게임 규칙·수치·문구는 JavaScript와 data/에서 관리합니다.
+ * 공통 변수 → 기본 요소 → 세 패널 → 반응형 화면 → 성장·전투 순서로 읽으면 됩니다.
+ */
+
+/* 공통 디자인 변수. --gold 같은 CSS 변수를 바꾸면 여러 패널의 색상이 함께 바뀝니다. color-scheme은 기본 컨트롤도 어두운 배경에 맞춥니다. */
 :root {
   color-scheme: dark;
   --bg: #101614;
@@ -9,9 +15,11 @@
   --serif: Georgia, "Noto Serif KR", "Batang", serif;
   --sans: system-ui, -apple-system, "Malgun Gothic", sans-serif;
 }
+/* padding과 border를 너비 안에 포함해 패널 크기 계산을 단순하게 합니다. */
 * {
   box-sizing: border-box;
 }
+/* 전체 배경·기본 글꼴·줄 간격. radial-gradient는 이미지 파일 없이 배경에 옅은 빛을 만듭니다. */
 body {
   margin: 0;
   background:
@@ -25,17 +33,20 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+/* 모든 버튼에 기본 글꼴과 클릭 커서를 적용합니다. */
 button {
   font: inherit;
   cursor: pointer;
   color: inherit;
 }
+/* 키보드로 이동하는 사용자가 현재 초점을 알아볼 수 있게 금색 외곽선을 표시합니다. */
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 5px;
 }
+/* 마우스를 올릴 때 배경·테두리가 갑자기 바뀌지 않게 합니다. 동작 줄이기 설정에서는 아래에서 해제합니다. */
 button {
   transition:
     background 0.18s,
@@ -49,9 +60,11 @@ a {
   color: inherit;
   text-decoration: none;
 }
+/* JavaScript가 hidden 속성으로 숨긴 영역은 다른 display 규칙보다 우선해 보이지 않게 합니다. */
 [hidden] {
   display: none !important;
 }
+/* 상단 로고·막 표시·도움말. Flex로 양끝을 배치하며 화면 너비에 맞게 간격을 유지합니다. */
 .topbar {
   min-height: 96px;
   padding: 20px 5.3%;
@@ -61,6 +74,7 @@ a {
   justify-content: space-between;
   gap: 20px;
 }
+/* 로고와 영문 부제. 설명 문구와 구분되는 제목용 서체를 사용합니다. */
 .brand {
   display: flex;
   align-items: center;
@@ -81,6 +95,7 @@ a {
   color: var(--gold);
   line-height: 1;
 }
+/* 넓은 화면에서만 보이는 게임 형식과 현재 막 표시입니다. */
 .edition {
   color: var(--muted);
   font-size: 9px;
@@ -90,6 +105,7 @@ a {
   margin-left: 30px;
   color: var(--gold);
 }
+/* 도움말·취소처럼 배경을 강조하지 않는 보조 버튼입니다. */
 .quiet {
   border: 0;
   background: transparent;
@@ -101,11 +117,13 @@ a {
   color: var(--gold);
   margin-left: 10px;
 }
+/* 콘텐츠가 너무 넓어지지 않게 최대 너비를 정하고 양옆 여백을 둡니다. */
 main {
   max-width: 1600px;
   padding: 0 5.3%;
   margin: auto;
 }
+/* 게임 소개 제목과 짧은 부제. 작은 화면에서는 부제를 숨겨 공간을 확보합니다. */
 .masthead {
   display: flex;
   align-items: flex-end;
@@ -113,6 +131,7 @@ main {
   margin: 42px 0 32px;
   gap: 20px;
 }
+/* 장·막·분류처럼 제목 위에 붙는 작은 표제의 공통 스타일입니다. */
 .eyebrow {
   font-size: 9px;
   letter-spacing: 2px;
@@ -134,17 +153,20 @@ main {
   color: var(--muted);
   padding-bottom: 3px;
 }
+/* 데스크톱의 캐릭터 / 모험 / 기록서 세 열입니다. minmax(0, 1fr)는 본문이 긴 글 때문에 열을 밀어내지 않게 합니다. */
 .game-layout {
   display: grid;
   grid-template-columns: 205px minmax(0, 1fr) 265px;
   gap: 22px;
   align-items: start;
 }
+/* 캐릭터와 기록서에 같은 배경·테두리를 적용해 중심 모험 패널과 구분합니다. */
 .character-panel,
 .journal-panel {
   background: linear-gradient(130deg, #1c251e, #151c18);
   border: 1px solid var(--line);
 }
+/* 왼쪽 캐릭터 영역의 기본 여백과 중앙 정렬입니다. */
 .character-panel {
   padding: 25px 21px;
   text-align: center;
@@ -154,6 +176,7 @@ main {
   letter-spacing: 2px;
   color: var(--muted);
 }
+/* 외부 이미지 없이 출신 기호와 둥근 테두리로 초상화를 만듭니다. relative는 안쪽 장식의 기준점입니다. */
 .portrait {
   width: 115px;
   height: 135px;
@@ -171,12 +194,14 @@ main {
   color: #b6bb9e;
   filter: drop-shadow(0 5px 5px #000);
 }
+/* 초상화의 안쪽 장식선. absolute와 inset으로 바깥 윤곽에서 일정한 간격을 유지합니다. */
 .portrait-ring {
   position: absolute;
   inset: 7px;
   border: 1px solid #5e624660;
   border-radius: inherit;
 }
+/* 작은 안내 텍스트와 낮은 강조 색상을 재사용합니다. */
 .tiny {
   font-size: 10px;
 }
@@ -196,6 +221,7 @@ main {
   min-height: 34px;
   margin: 8px 0;
 }
+/* 출신 선택처럼 본문에 가까운 작은 링크형 버튼입니다. */
 .text-button {
   border: 0;
   background: none;
@@ -210,10 +236,12 @@ main {
   cursor: default;
   color: var(--muted);
 }
+/* 패널 안에서 정보 묶음을 나누는 가로선입니다. */
 .divider {
   border-top: 1px solid var(--line);
   margin: 20px 0;
 }
+/* 기력 이름과 현재/최대 수치를 양끝에 표시합니다. */
 .health-label {
   display: flex;
   justify-content: space-between;
@@ -224,6 +252,7 @@ main {
   font-weight: 400;
   color: var(--gold);
 }
+/* 기력 막대 배경. 안쪽 div 너비는 CharacterView가 현재 기력 비율로 갱신합니다. */
 .health-track {
   height: 4px;
   background: #0e1511;
@@ -235,6 +264,7 @@ main {
   background: #85956b;
   transition: width 0.5s;
 }
+/* 무력·통찰·의지 카드 세 개를 같은 너비로 배치합니다. */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -256,11 +286,13 @@ main {
   font-weight: 400;
   color: #ddd7bb;
 }
+/* 소지품 목록의 표제와 목록 여백입니다. */
 .inventory-label {
   font-size: 9px;
   margin: 25px 0 10px;
   text-align: left;
 }
+/* 기본 목록 점을 제거하고 게임 분위기에 맞는 물건 목록을 만듭니다. */
 .inventory {
   padding: 0;
   margin: 0;
@@ -273,11 +305,13 @@ main {
   padding: 9px 0;
   border-bottom: 1px solid #30382d80;
 }
+/* 가상 요소로 각 물건 앞에 장식 기호를 붙입니다. 실제 소지품 문자열에는 포함되지 않습니다. */
 .inventory li:before {
   content: "◇";
   color: var(--gold);
   margin-right: 8px;
 }
+/* 캐릭터 패널 아래에 표시되는 짧은 인용문입니다. */
 .character-foot {
   font-family: var(--serif);
   font-size: 11px;
@@ -285,12 +319,14 @@ main {
   color: #a2a98d;
   margin: 30px 0 2px;
 }
+/* 중앙 모험 카드. overflow로 안쪽 그림이 카드 테두리를 넘지 않게 합니다. */
 .adventure {
   border: 1px solid #414636;
   background: #1c221c;
   overflow: hidden;
   min-width: 0;
 }
+/* 마을 SVG가 들어가는 고정 높이 영역입니다. SVG의 크기와 화면 자르기는 아래에서 정합니다. */
 .scene-art {
   height: 245px;
   position: relative;
@@ -301,6 +337,7 @@ main {
   height: 100%;
   display: block;
 }
+/* 그림 아래에 어두운 내부 그림자를 덧대 본문과 자연스럽게 이어 줍니다. pointer-events:none은 클릭을 가로막지 않게 합니다. */
 .scene-art:after {
   content: "";
   position: absolute;
@@ -308,6 +345,7 @@ main {
   box-shadow: inset 0 -45px 35px -20px #121d1a;
   pointer-events: none;
 }
+/* 그림 위 장소 이름. absolute로 그림 하단에 고정하고 z-index로 그림자보다 위에 둡니다. */
 .art-caption {
   position: absolute;
   bottom: 16px;
@@ -332,9 +370,11 @@ main {
   letter-spacing: 2px;
   color: #b4bdae;
 }
+/* 이야기·판정·선택지 묶음의 기본 여백입니다. */
 .story-content {
   padding: 28px 32px 30px;
 }
+/* 현재 장 이름과 진행 번호를 같은 행의 양끝에 배치합니다. */
 .chapter-line {
   display: flex;
   justify-content: space-between;
@@ -350,6 +390,7 @@ main {
   font-size: 15px;
   color: #858e70;
 }
+/* 장면 제목. clamp로 화면 크기에 맞춰 글자 크기를 제한 범위 안에서 조절합니다. */
 .story-content h2 {
   font-family: var(--serif);
   font-size: clamp(23px, 2.2vw, 30px);
@@ -359,6 +400,7 @@ main {
   margin: 13px 0 20px;
   outline: none;
 }
+/* 장면의 대표 대사를 금색 왼쪽 선과 다른 서체로 구분합니다. */
 blockquote {
   font-family: var(--serif);
   color: var(--gold);
@@ -367,6 +409,7 @@ blockquote {
   padding: 5px 0 5px 15px;
   border-left: 2px solid #7e724d;
 }
+/* 이야기 문단. 긴 줄 간격과 단어 단위 줄바꿈으로 한국어 본문을 읽기 쉽게 합니다. */
 .prose {
   font-family: var(--serif);
   font-size: 13px;
@@ -377,11 +420,13 @@ blockquote {
 .prose p {
   margin: 0 0 15px;
 }
+/* 가능한 선택지 버튼을 세로로 쌓습니다. 버튼 수가 달라져도 같은 간격을 유지합니다. */
 .choices {
   display: grid;
   gap: 10px;
   margin-top: 27px;
 }
+/* 선택지 내부는 순번 / 설명 / 화살표 세 열로 나눕니다. 설명 열이 남는 너비를 사용합니다. */
 .choice {
   border: 1px solid #4d543d;
   background: linear-gradient(100deg, #293122, #242c20);
@@ -393,6 +438,7 @@ blockquote {
   gap: 9px;
   width: 100%;
 }
+/* 선택 가능한 항목에 마우스를 올렸음을 테두리·배경·작은 이동으로 알립니다. */
 .choice:hover {
   background: #35402b;
   border-color: #9e915e;
@@ -417,6 +463,7 @@ blockquote {
 .choice-arrow {
   color: var(--gold);
 }
+/* 중앙 카드 아래의 자동 저장 상태와 다시 시작 버튼입니다. */
 .story-footer {
   border-top: 1px solid var(--line);
   display: flex;
@@ -437,6 +484,7 @@ blockquote {
 .story-footer .quiet {
   font-size: 9px;
 }
+/* 오른쪽 기록서 패널의 내부 여백입니다. 공통 테두리는 위쪽 규칙을 공유합니다. */
 .journal-panel {
   padding: 22px 19px 0;
 }
@@ -451,6 +499,7 @@ blockquote {
   color: var(--gold);
   font-size: 22px;
 }
+/* 여정·세계관·기록 탭. 선택 여부는 JavaScript가 aria-selected로 갱신합니다. */
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--line);
@@ -466,14 +515,17 @@ blockquote {
   font-size: 11px;
   flex: 1;
 }
+/* 현재 선택한 탭에 금색 밑줄을 표시합니다. 접근성 속성과 시각 표시가 같은 상태를 사용합니다. */
 .tabs button[aria-selected="true"] {
   border-bottom-color: var(--gold);
   color: var(--gold);
 }
+/* 탭 내용 영역의 기본 높이. 빈 기록에서도 탭 아래 공간이 급격히 줄지 않게 합니다. */
 #journal-content {
   padding-top: 23px;
   min-height: 290px;
 }
+/* 메인 퀘스트의 분류·제목·설명과 진행 목표 스타일입니다. */
 .quest-category {
   font-size: 8px;
   letter-spacing: 2px;
@@ -490,6 +542,7 @@ blockquote {
   line-height: 1.9;
   color: var(--muted);
 }
+/* 완료 체크와 미완료 기호를 직접 넣으므로 브라우저 기본 목록 장식을 제거합니다. */
 .objectives {
   padding: 0;
   list-style: none;
@@ -512,6 +565,7 @@ blockquote {
   letter-spacing: 1px;
   margin: 24px 0 12px;
 }
+/* 수집한 단서를 작은 테두리 카드로 표시합니다. */
 .clue {
   font-size: 10px;
   background: #2e3525;
@@ -520,6 +574,7 @@ blockquote {
   margin: 6px 0;
   color: #c3c6a7;
 }
+/* 기록서 하단의 장식과 짧은 문구. 작은 화면에서는 숨겨 본문 공간을 늘립니다. */
 .journal-bottom {
   margin-top: 25px;
   border-top: 1px solid var(--line);
@@ -536,11 +591,13 @@ blockquote {
   line-height: 2;
   color: var(--muted);
 }
+/* 세계관 펼침 항목. HTML details의 기본 열기·닫기 기능을 유지합니다. */
 details {
   border-bottom: 1px solid var(--line);
   padding: 0 0 12px;
   margin-bottom: 13px;
 }
+/* 세계관 항목의 클릭 가능한 제목입니다. 오른쪽 기호는 가상 요소로 표시합니다. */
 summary {
   font-family: var(--serif);
   font-size: 12px;
@@ -557,6 +614,7 @@ summary:after {
   font-family: var(--sans);
   color: var(--gold);
 }
+/* 열린 항목에는 더하기 대신 빼기 기호를 표시합니다. 별도 JavaScript 상태가 필요 없습니다. */
 details[open] summary:after {
   content: "−";
 }
@@ -580,6 +638,7 @@ details p {
   margin-top: 0;
   margin-bottom: 20px;
 }
+/* 지난 선택과 판정 기록. 왼쪽 선으로 한 사건을 묶어 읽기 쉽게 합니다. */
 .log-item {
   border-left: 1px solid #555a3d;
   padding-left: 13px;
@@ -599,6 +658,7 @@ details p {
   color: var(--gold);
   font-size: 9px;
 }
+/* 페이지 하단의 작품명·현재 막·짧은 안내입니다. */
 .page-footer {
   font-size: 8px;
   color: var(--muted);
@@ -612,6 +672,7 @@ details p {
   color: var(--gold);
   margin: 0 12px;
 }
+/* 이야기 판정 결과는 d20 기호와 설명을 두 열로 나눕니다. 전투 패널과는 별도입니다. */
 .roll-result {
   display: grid;
   grid-template-columns: 48px 1fr;
@@ -622,10 +683,12 @@ details p {
   padding: 15px;
   margin-bottom: 25px;
 }
+/* 실패 결과는 성공과 색을 다르게 하되 텍스트에도 성공/실패를 명시합니다. */
 .roll-result.failure {
   border-color: #735d4e;
   background: #3d2c2280;
 }
+/* clip-path의 다각형으로 주사위 느낌의 기호를 만듭니다. 숫자는 DOM 텍스트로 유지합니다. */
 .die {
   width: 45px;
   height: 49px;
@@ -648,6 +711,7 @@ details p {
   color: #c9ccba;
   margin: 7px 0 0;
 }
+/* 막 종료 안내와 주요 행동 버튼의 스타일입니다. */
 .ending-note {
   font-size: 12px;
   color: var(--gold);
@@ -666,6 +730,7 @@ details p {
   background: #d1b577;
   color: #101510;
 }
+/* 출신·안내·초기화·레벨 경고에 공통 적용하는 기본 모달 창입니다. 화면보다 크면 내부가 스크롤됩니다. */
 dialog {
   position: fixed;
   max-width: 680px;
@@ -678,6 +743,7 @@ dialog {
   padding: 36px;
   box-shadow: 0 30px 100px #0009;
 }
+/* showModal로 열린 창 뒤를 어둡게 하고 흐리게 처리합니다. */
 dialog::backdrop {
   background: #080d0bcc;
   backdrop-filter: blur(5px);
@@ -693,6 +759,7 @@ dialog > p:not(.eyebrow) {
   line-height: 2;
   color: #b6c0ac;
 }
+/* 안내와 출신 선택 창의 오른쪽 위 닫기 버튼입니다. */
 .dialog-close {
   position: absolute;
   right: 15px;
@@ -704,6 +771,7 @@ dialog > p:not(.eyebrow) {
   color: var(--muted);
   margin-bottom: 25px;
 }
+/* 출신 설정으로 생성되는 선택 카드. 클릭 이벤트는 GameView에서 연결합니다. */
 .origin-card {
   padding: 18px;
   border: 1px solid var(--line);
@@ -732,12 +800,14 @@ dialog > p:not(.eyebrow) {
   font-size: 10px;
   color: var(--gold);
 }
+/* 대화상자 하단의 취소·확인 버튼을 오른쪽으로 모읍니다. */
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 18px;
   margin-top: 25px;
 }
+/* 기력 1의 부상 안내를 일반 문단과 구분합니다. */
 .wounded {
   color: #d0a28b;
   font-size: 11px;
@@ -746,6 +816,7 @@ dialog > p:not(.eyebrow) {
   border-left: 2px solid #a2775c;
   margin-bottom: 20px;
 }
+/* 매우 넓은 화면: 양쪽 패널과 그림·본문 여백을 조금 더 넓힙니다. */
 @media (min-width: 1550px) {
   .game-layout {
     grid-template-columns: 230px minmax(0, 1fr) 285px;
@@ -760,6 +831,7 @@ dialog > p:not(.eyebrow) {
     font-size: 14px;
   }
 }
+/* 작은 데스크톱: 세 열을 유지하되 패널 너비·여백·그림 높이를 줄입니다. */
 @media (max-width: 1180px) {
   main {
     padding: 0 3%;
@@ -798,6 +870,7 @@ dialog > p:not(.eyebrow) {
     height: 120px;
   }
 }
+/* 태블릿: 기록서를 아래 행으로 옮겨 본문이 지나치게 좁아지지 않게 합니다. */
 @media (max-width: 950px) {
   .game-layout {
     grid-template-columns: 170px minmax(0, 1fr);
@@ -835,6 +908,7 @@ dialog > p:not(.eyebrow) {
     font-size: 10px;
   }
 }
+/* 모바일: 한 열 레이아웃으로 바꾸고 캐릭터 정보를 가로 요약 카드로 재배치합니다. */
 @media (max-width: 620px) {
   main {
     padding: 0 16px;
@@ -1000,11 +1074,175 @@ dialog > p:not(.eyebrow) {
     font-size: 10px;
   }
 }
+/* 운영체제의 동작 줄이기 설정을 존중해 전환과 부드러운 스크롤을 비활성화합니다. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *:before,
   *:after {
     scroll-behavior: auto !important;
     transition: none !important;
+  }
+}
+
+/* 성장과 전투는 기존 기록서 색상과 동일한 팔레트를 사용합니다. */
+/* 레벨·경험치 영역. 기력 막대와 별도로 성장 진행을 표시합니다. */
+.progression {
+  margin-top: 20px;
+}
+.experience-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.experience-label strong {
+  color: var(--gold);
+  font-size: 13px;
+}
+.experience-track {
+  height: 4px;
+  margin-top: 9px;
+  background: #0e1511;
+}
+/* CharacterView가 현재 레벨 구간 비율로 너비를 갱신하는 경험치 막대입니다. */
+#experience-bar {
+  height: 100%;
+  width: 0;
+  background: var(--gold);
+  transition: width 0.3s;
+}
+/* 전투 선택지 안에 실제 지급 예정 경험치와 레벨 차이 안내를 추가합니다. */
+.encounter-reward,
+.encounter-warning {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+}
+.encounter-reward {
+  color: #cbb989;
+}
+.encounter-warning {
+  color: #d1ad83;
+}
+/* 중앙 카드 안 전투 전용 영역. 진행 중 전투 또는 직전 결과를 CombatView가 표시합니다. */
+.combat-panel {
+  margin-top: 22px;
+  padding: 23px;
+  background: #111b16;
+  border: 1px solid #666649;
+}
+.combat-panel h3 {
+  font: 22px/1.6 var(--serif);
+  color: #e4d9ba;
+  margin: 8px 0 16px;
+  outline: none;
+}
+.combat-description {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.combat-health {
+  color: #d6d7c4;
+  font-size: 12px;
+}
+.combat-reward {
+  color: var(--gold);
+  font-size: 12px;
+  line-height: 1.9;
+}
+/* 적 기력은 HTML progress로 표현합니다. 아래 WebKit 규칙은 해당 브라우저의 기본 막대 색을 맞춥니다. */
+.combat-panel progress {
+  width: 100%;
+  height: 9px;
+  accent-color: #a89b69;
+}
+.combat-panel progress::-webkit-progress-bar {
+  background: #28312a;
+}
+.combat-panel progress::-webkit-progress-value {
+  background: #b49b69;
+}
+/* 최근 전투 행동과 주사위 문장. 전체 이력은 기록서에 남습니다. */
+.combat-log {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 20px;
+}
+.combat-log strong {
+  color: #c6c8ad;
+  font-size: 11px;
+  font-weight: 500;
+}
+.combat-log p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.9;
+  margin: 5px 0 12px;
+}
+/* 기본 공격·결정타·응급 처치·후퇴를 넓은 화면에서 두 열로 배치합니다. */
+.combat-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+.combat-action {
+  background: #252e21;
+  border: 1px solid #4d543d;
+  text-align: left;
+  padding: 13px;
+}
+.combat-action:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: #35402b;
+}
+.combat-action strong,
+.combat-action span {
+  display: block;
+}
+.combat-action strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: #dfdcc4;
+}
+.combat-action span {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+/* 치료가 소진되었거나 이미 최대 기력일 때 비활성 상태임을 표시합니다. */
+.combat-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* 승리로 레벨이 오른 경우에만 추가되는 성장 안내 카드입니다. */
+.level-up {
+  padding: 14px;
+  border: 1px solid var(--gold);
+  background: #343b22;
+  color: #e2d2a2;
+  font-size: 13px;
+  line-height: 1.9;
+}
+#ending-tools .primary {
+  margin: 7px 8px 0 0;
+}
+/* 모바일 전투·성장 보정: 경험치 영역은 캐릭터 카드 한 줄 전체를 쓰고 전투 버튼은 세로로 배치합니다. */
+@media (max-width: 620px) {
+  .progression {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+  }
+  .combat-panel {
+    padding: 16px;
+  }
+  .combat-panel h3 {
+    font-size: 20px;
+  }
+  .combat-actions {
+    grid-template-columns: 1fr;
   }
 }
