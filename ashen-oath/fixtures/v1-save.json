@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "origin": "scribe",
+  "scene": "crossroads",
+  "hp": 10,
+  "clues": ["소녀의 이름", "원래의 봉인문", "강 건너의 증인"],
+  "items": ["은실로 꿰맨 명부"],
+  "visited": ["arrival", "inn", "archive", "crossroads", "river"],
+  "log": [
+    {
+      "scene": "arrival",
+      "label": "소녀에게 나무패에 관해 묻는다",
+      "result": {
+        "roll": 20,
+        "bonus": 3,
+        "dc": 11,
+        "stat": "spirit",
+        "success": true,
+        "text": "“네라.” 당신이 기다리자 소녀가 스스로 답한다. 이름을 말한 목소리에는 아무 일도 일어나지 않는다. 위험한 것은 이름 자체가 아닐지도 모른다."
+      }
+    },
+    {
+      "scene": "inn",
+      "label": "닫힌 서고에서 옛 명부를 찾는다",
+      "result": null
+    },
+    {
+      "scene": "archive",
+      "label": "도면과 최근 명부를 대조한다",
+      "result": {
+        "roll": 20,
+        "bonus": 4,
+        "dc": 12,
+        "stat": "wit",
+        "success": true,
+        "text": "도면의 주석을 찾았다. 「종은 그릇, 공동의 증언은 마개」. 잊힌 사람을 함께 기억하면 새 은종 없이도 봉인을 되살릴 수 있다."
+      }
+    },
+    {
+      "scene": "crossroads",
+      "label": "강가의 목격자를 찾는다",
+      "result": null
+    },
+    {
+      "scene": "river",
+      "label": "목소리를 외면하고 세른의 노래를 배운다",
+      "result": {
+        "roll": 20,
+        "bonus": 3,
+        "dc": 12,
+        "stat": "spirit",
+        "success": true,
+        "text": "세 이름과 세 삶을 노래에 담았다. 세른은 새벽 전에 증인들을 데리고 오겠다고 약속한다. 기억은 교단만의 것이 아니다."
+      }
+    }
+  ],
+  "last": {
+    "roll": 20,
+    "bonus": 3,
+    "dc": 12,
+    "stat": "spirit",
+    "success": true,
+    "text": "세 이름과 세 삶을 노래에 담았다. 세른은 새벽 전에 증인들을 데리고 오겠다고 약속한다. 기억은 교단만의 것이 아니다."
+  }
+}
