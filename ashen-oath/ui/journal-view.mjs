@@ -256,12 +256,22 @@ export class JournalView {
       );
       if (entry.result) {
         const result = entry.result;
-        const label = `d20 ${result.roll} + ${result.bonus} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`;
+        const label = `d20 ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`;
         item.append(
           createElement("div", label, "log-roll"),
           createElement("p", result.text),
         );
       }
+      if (entry.result?.statusPenalty)
+        item.append(
+          createElement(
+            "p",
+            `상태 이상 보정 −${entry.result.statusPenalty}`,
+            "status-event",
+          ),
+        );
+      for (const change of entry.result?.statusChanges ?? [])
+        item.append(createElement("p", change, "status-event"));
       if (entry.combat) {
         for (const line of entry.combat.lines)
           item.append(createElement("p", line));

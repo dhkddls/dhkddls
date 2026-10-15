@@ -1317,6 +1317,67 @@ dialog > p:not(.eyebrow) {
   }
 }
 
+/* 상태는 캐릭터 패널 안에 표시합니다. 감소한 수치와 해제 방법을 색상 외에 글로도 안내합니다. */
+.status-effects {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.status-effects h3 {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gold);
+  margin: 0 0 10px;
+}
+.status-clear {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 0;
+}
+.status-card {
+  padding: 10px;
+  margin: 8px 0;
+  background: #30241e;
+  border-left: 2px solid #bf8e6d;
+}
+.status-card strong {
+  font-size: 11px;
+  color: #e4b99b;
+}
+.status-card p,
+.status-card small,
+.status-help {
+  display: block;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #c3b5a5;
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+.stat-reduced strong {
+  color: #e4b99b;
+}
+.status-event,
+.check-risk {
+  display: block;
+  font-size: 10px;
+  color: #dfb898;
+  line-height: 1.8;
+  margin-top: 5px;
+}
+.combat-modifiers {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #c9b89e;
+}
+@media (max-width: 620px) {
+  .status-effects {
+    grid-column: 1 / -1;
+    margin-top: 14px;
+  }
+}
+
 </style>
   </head>
   <body>
@@ -1373,6 +1434,13 @@ dialog > p:not(.eyebrow) {
             </div>
             <div class="experience-track"><div id="experience-bar"></div></div>
           </div>
+          <!-- 남은 횟수와 해제 방법은 StatusView가 표시하며 모바일에서도 숨기지 않습니다. -->
+          <section
+            id="status-effects"
+            class="status-effects"
+            aria-label="현재 상태 이상"
+            aria-live="polite"
+          ></section>
           <p class="eyebrow inventory-label">소지품</p>
           <ul id="inventory" class="inventory"></ul>
           <div class="character-foot">
@@ -1634,10 +1702,18 @@ dialog > p:not(.eyebrow) {
         안내를 확인한 뒤 전투를 시작합니다.
       </p>
       <p>
+        판정에 실패하면 갈대 상처(무력·피해 감소), 기억 혼탁(통찰·명중 감소),
+        메아리 공포(의지·방어 감소) 중 하나가 생깁니다. 전투에서 빗나가도 공포가
+        생깁니다. 이후 판정·공격·응급 처치 3회 동안 적용되며, 같은 상태는 강도
+        대신 기간만 갱신됩니다. 이동·후퇴로는 기간이 줄지 않습니다.
+      </p>
+      <p>
         공격·결정타·응급 처치·후퇴를 선택할 수 있습니다. 패배와 후퇴는 경험치가
         없으며, 패배하면 기력 1로 안전한 거점이나 확보한 통로에 돌아옵니다.
-        휴식은 기력을 전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대
-        기력과 능력치가 증가합니다.
+        휴식은 기력을 전부 회복하고 모든 상태 이상을 해제합니다. 응급 처치는
+        먼저 걸린 상태 하나를 해제하며, 기력이 가득해도 사용할 수 있습니다.
+        레벨업은 기력을 회복하고 최대 기력·능력치를 높이지만 상태 이상은
+        남습니다.
       </p>
       <p>
         중반부를 마치면 왕도에서 Lv.8까지 성장할 수 있습니다. 조사와 두 단계
@@ -2795,12 +2871,12 @@ dialog > p:not(.eyebrow) {
   var COMBAT_ACTIONS = {
     attack: {
       name: "기본 공격",
-      detail: "가장 높은 능력치로 판정 · 빗나가도 1 피해"
+      detail: "최고 기본 능력치와 상태 명중 보정 · 빗나가도 1 피해"
     },
     power: { name: "결정타", detail: "명중 보정 −3 · 적중 피해 +3" },
     recover: {
       name: "응급 처치",
-      detail: "기력 4 + 레벨 회복 · 전투당 2회 · 적도 행동"
+      detail: "기력 4 + 레벨 회복 · 상태 이상 1개 해제 · 전투당 2회 · 적도 행동"
     },
     flee: { name: "안전한 곳으로 후퇴", detail: "항상 성공 · 경험치 없음" }
   };
@@ -2865,6 +2941,108 @@ dialog > p:not(.eyebrow) {
     }
   };
 
+  // data/status-effects.mjs
+  var STATUS_EFFECTS = Object.freeze({
+    wound: Object.freeze({
+      id: "wound",
+      name: "갈대 상처",
+      stat: "might",
+      statPenalty: 2,
+      damagePenalty: 2,
+      duration: 3,
+      effect: "무력 판정 −2 · 공격 피해 −2",
+      lore: "차가운 갈대와 금 간 은종이 남긴 상처 때문에 힘을 온전히 싣지 못한다."
+    }),
+    fog: Object.freeze({
+      id: "fog",
+      name: "기억 혼탁",
+      stat: "wit",
+      statPenalty: 2,
+      attackPenalty: 2,
+      duration: 3,
+      effect: "통찰 판정 −2 · 공격 명중 −2",
+      lore: "지워진 이름의 잔향이 방금 본 글자와 적의 움직임을 겹쳐 보이게 한다."
+    }),
+    dread: Object.freeze({
+      id: "dread",
+      name: "메아리 공포",
+      stat: "spirit",
+      statPenalty: 2,
+      defensePenalty: 2,
+      duration: 3,
+      effect: "의지 판정 −2 · 방어 −2",
+      lore: "붙잡지 못한 목소리와 빗나간 칼끝이 떠올라 다음 공격에 몸이 굳는다."
+    })
+  });
+  var FAILURE_STATUSES = Object.freeze({
+    might: "wound",
+    wit: "fog",
+    spirit: "dread"
+  });
+
+  // domain/status-effects.mjs
+  var StatusEffects = class _StatusEffects {
+    // Map의 삽입 순서로 먼저 걸린 효과부터 응급 처치합니다.
+    #remaining = /* @__PURE__ */ new Map();
+    /** 화면·저장에는 복사본을 반환합니다. 외부에서 남은 횟수를 바꿀 수 없습니다. */
+    get active() {
+      return [...this.#remaining].map(([id, remaining]) => ({
+        ...STATUS_EFFECTS[id],
+        remaining
+      }));
+    }
+    /** 같은 상태는 강도를 더하지 않고 다음 3회로 갱신합니다. 알 수 없는 효과는 거부합니다. */
+    apply(id) {
+      if (!Object.hasOwn(STATUS_EFFECTS, id))
+        throw new Error("알 수 없는 상태 이상입니다.");
+      this.#remaining.set(id, STATUS_EFFECTS[id].duration);
+      return { ...STATUS_EFFECTS[id], remaining: STATUS_EFFECTS[id].duration };
+    }
+    /** 해당 능력치의 이야기 판정에 적용할 감소량입니다. */
+    statPenalty(stat) {
+      return this.active.filter((effect) => effect.stat === stat).reduce((sum, effect) => sum + effect.statPenalty, 0);
+    }
+    /** 명중·피해·방어의 별도 전투 감소량입니다. 기본 능력치와 이중 차감하지 않습니다. */
+    combatPenalty(kind) {
+      return this.active.reduce(
+        (sum, effect) => sum + (effect[`${kind}Penalty`] ?? 0),
+        0
+      );
+    }
+    /** 행동을 모두 계산한 뒤 소모합니다. 이번에 새로 걸리는 효과는 그다음에 적용해야 합니다. */
+    advance() {
+      const expired = [];
+      for (const [id, remaining] of this.#remaining) {
+        if (remaining === 1) {
+          expired.push({ ...STATUS_EFFECTS[id], remaining: 0 });
+          this.#remaining.delete(id);
+        } else this.#remaining.set(id, remaining - 1);
+      }
+      return expired;
+    }
+    /** 응급 처치로 먼저 걸린 상태 하나를 해제합니다. 없으면 null입니다. */
+    relieveOne() {
+      const first = this.active[0];
+      if (!first) return null;
+      this.#remaining.delete(first.id);
+      return first;
+    }
+    /** 거점 휴식과 막 사이 안전한 여행에서 모든 상태를 해제합니다. */
+    clear() {
+      this.#remaining.clear();
+    }
+    /** Map까지 복제하여 분기 탐색에서 다른 캐릭터의 상태가 변하지 않게 합니다. */
+    clone() {
+      const copy = new _StatusEffects();
+      copy.#remaining = new Map(this.#remaining);
+      return copy;
+    }
+    /** 이야기·전투 로그가 같은 수치와 지속 횟수를 안내하도록 문구를 공유합니다. */
+    static describe(effect) {
+      return `상태 이상 · ${effect.name}: ${effect.effect} · 다음 위험 행동 ${effect.remaining}회. 같은 효과는 강도 대신 기간만 갱신됩니다.`;
+    }
+  };
+
   // domain/character.mjs
   var Character = class _Character {
     // Lv.1의 최대 기력입니다. 성장 후 최대 기력은 maxHealth getter를 사용합니다.
@@ -2881,6 +3059,8 @@ dialog > p:not(.eyebrow) {
     #experience = 0;
     // 이전 v2 저장은 Lv.5 계산을 그대로 재생합니다. 왕도 진입 기록에서만 Lv.8을 엽니다.
     #levelCap = 5;
+    // 상태 이상은 별도 객체에 맡겨 성장·소지품과 지속 횟수 처리를 구분합니다.
+    #statusEffects = new StatusEffects();
     /** 등록된 출신만 허용하고 해당 출신의 시작 소지품을 지급합니다. */
     constructor(originId = "warden") {
       if (!Object.hasOwn(ORIGINS, originId)) throw new Error("알 수 없는 출신");
@@ -2932,7 +3112,7 @@ dialog > p:not(.eyebrow) {
       return _Character.MAX_HEALTH + (this.level - 1) * 4;
     }
     /** 출신의 세 기본 능력치에 레벨−1을 더해 새 객체로 반환합니다. */
-    get stats() {
+    get baseStats() {
       return Object.fromEntries(
         Object.entries(this.origin.stats).map(([stat, bonus]) => [
           stat,
@@ -2940,17 +3120,49 @@ dialog > p:not(.eyebrow) {
         ])
       );
     }
-    /** 세 능력치 중 가장 높은 값을 사용해 어느 출신도 자신의 강점으로 싸우게 합니다. */
+    /** 화면과 이야기 판정에는 상태 이상을 반영한 능력치를 표시합니다. 음수도 유효한 보정입니다. */
+    get stats() {
+      return Object.fromEntries(
+        Object.entries(this.baseStats).map(([stat, bonus]) => [
+          stat,
+          bonus - this.statusPenaltyFor(stat)
+        ])
+      );
+    }
+    /** 현재 상태와 횟수의 복사본입니다. 저장에서 받은 상태를 직접 대입하지 않습니다. */
+    get statuses() {
+      return this.#statusEffects.active;
+    }
+    /** 이야기 판정의 기본치와 감소량을 구분해 표시할 때 사용합니다. */
+    statusPenaltyFor(stat) {
+      return this.#statusEffects.statPenalty(stat);
+    }
+    /** 실패로 새 효과를 걸거나 같은 효과의 기간을 갱신합니다. */
+    applyStatus(id) {
+      return this.#statusEffects.apply(id);
+    }
+    /** 판정·전투 행동이 끝난 뒤 기존 효과의 남은 횟수를 줄입니다. */
+    advanceStatuses() {
+      return this.#statusEffects.advance();
+    }
+    /** 응급 처치 시 먼저 걸린 효과 하나만 해제합니다. */
+    relieveStatus() {
+      return this.#statusEffects.relieveOne();
+    }
+    /** 전투 명중은 성장 능력치 중 최고값에 기억 혼탁의 감소량을 적용합니다. */
     get attackBonus() {
-      return Math.max(...Object.values(this.stats));
+      return Math.max(...Object.values(this.baseStats)) - this.#statusEffects.combatPenalty("attack");
     }
-    /** 기본 피해 3에 레벨과 명중 보정의 절반(버림)을 더합니다. 치명타·결정타는 전투에서 추가합니다. */
+    /** 기본 피해 3에 레벨과 성장 최고 능력치의 절반(버림)을 더하고 상처 피해 감소를 뺍니다. */
     get attackDamage() {
-      return 3 + this.level + Math.floor(this.attackBonus / 2);
+      return Math.max(
+        1,
+        3 + this.level + Math.floor(Math.max(...Object.values(this.baseStats)) / 2) - this.#statusEffects.combatPenalty("damage")
+      );
     }
-    /** 적 공격이 넘어야 할 플레이어 방어값입니다. 레벨마다 1 증가합니다. */
+    /** 적 공격이 넘어야 할 방어값입니다. 레벨마다 1 증가하고 공포 상태에서는 2 감소합니다. */
     get defense() {
-      return 9 + this.level;
+      return 9 + this.level - this.#statusEffects.combatPenalty("defense");
     }
     /** might·wit·spirit 중 요청한 능력치의 현재 보정값을 반환합니다. */
     bonusFor(stat) {
@@ -2968,9 +3180,10 @@ dialog > p:not(.eyebrow) {
     heal(amount) {
       this.#health = Math.min(this.maxHealth, this.#health + amount);
     }
-    /** 휴식 또는 레벨업 시 기력을 현재 최대치로 채웁니다. */
+    /** 안전한 곳의 휴식은 기력을 채우고 모든 상태 이상을 해제합니다. */
     rest() {
       this.#health = this.maxHealth;
+      this.#statusEffects.clear();
     }
     /**
      * 0 이상의 정수 경험치를 누적하고, 한 번에 여러 레벨이 올라도 새 최대 기력까지 회복합니다.
@@ -2981,7 +3194,7 @@ dialog > p:not(.eyebrow) {
         throw new Error("경험치는 0 이상의 정수여야 합니다.");
       const previousLevel = this.level;
       this.#experience += amount;
-      if (this.level > previousLevel) this.rest();
+      if (this.level > previousLevel) this.#health = this.maxHealth;
       return { previousLevel, level: this.level, amount };
     }
     /** 빈 값과 이미 가진 물건은 추가하지 않아 같은 사건을 반복해도 목록이 중복되지 않게 합니다. */
@@ -2995,6 +3208,7 @@ dialog > p:not(.eyebrow) {
       character.#items = [...this.#items];
       character.#experience = this.#experience;
       character.#levelCap = this.#levelCap;
+      character.#statusEffects = this.#statusEffects.clone();
       return character;
     }
   };
@@ -3020,7 +3234,12 @@ dialog > p:not(.eyebrow) {
         dc: choice.check.dc,
         stat: choice.check.stat,
         success,
-        text: success ? choice.success : choice.failure
+        text: success ? choice.success : choice.failure,
+        // 감소량이 있을 때만 부가 정보를 남겨 이전 저장의 결과 구조를 보존합니다.
+        ...character.statusPenaltyFor(choice.check.stat) ? {
+          baseBonus: character.baseStats[choice.check.stat],
+          statusPenalty: character.statusPenaltyFor(choice.check.stat)
+        } : {}
       };
     }
     /** 난수에 20을 곱해 버린 뒤 1을 더하면 1~20입니다. 잘못된 난수 공급자는 오류로 드러냅니다. */
@@ -3077,7 +3296,7 @@ dialog > p:not(.eyebrow) {
      * 행동을 검증한 뒤 플레이어 → 생존한 적 순서로 한 턴을 진행합니다.
      * 후퇴는 즉시 종료하고, 소진된 치료 등 잘못된 행동은 턴을 소비하기 전에 거부합니다.
      */
-    act(actionId, character, dice) {
+    act(actionId, character, dice, { debuffsEnabled = true } = {}) {
       if (this.isOver || !Object.hasOwn(COMBAT_ACTIONS, actionId)) {
         throw new Error("현재 사용할 수 없는 전투 행동입니다.");
       }
@@ -3097,7 +3316,13 @@ dialog > p:not(.eyebrow) {
           this.#monster.retreatText ?? "교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다."
         );
       } else {
-        this.#playerTurn(actionId, character, dice, turn);
+        const missed = this.#playerTurn(
+          actionId,
+          character,
+          dice,
+          turn,
+          debuffsEnabled
+        );
         if (this.#enemyHealth === 0) {
           this.#status = "victory";
           turn.lines.push(`${this.#monster.name}의 형체가 흩어졌다.`);
@@ -3110,6 +3335,14 @@ dialog > p:not(.eyebrow) {
             );
           }
         }
+        if (debuffsEnabled) {
+          for (const effect of character.advanceStatuses())
+            turn.lines.push(`지속 종료 · ${effect.name}`);
+          if (missed)
+            turn.lines.push(
+              StatusEffects.describe(character.applyStatus("dread"))
+            );
+        }
       }
       this.#turns.push(turn);
       return structuredClone(turn);
@@ -3121,7 +3354,7 @@ dialog > p:not(.eyebrow) {
       return roll;
     }
     /** 치료는 횟수를 소모하고, 공격은 명중·피해를 계산합니다. 결정타는 명중 −3 대신 적중 피해 +3입니다. */
-    #playerTurn(actionId, character, dice, turn) {
+    #playerTurn(actionId, character, dice, turn, debuffsEnabled) {
       if (actionId === "recover") {
         const before = character.health;
         character.heal(4 + character.level);
@@ -3129,7 +3362,14 @@ dialog > p:not(.eyebrow) {
         turn.lines.push(
           `응급 처치로 기력 ${character.health - before} 회복. 남은 처치 ${this.#remedies}회.`
         );
-        return;
+        if (debuffsEnabled) {
+          const relieved = character.relieveStatus();
+          if (relieved)
+            turn.lines.push(
+              `응급 처치 · ${relieved.name} 해제. 다른 상태의 지속은 이번 행동에도 줄어듭니다.`
+            );
+        }
+        return false;
       }
       const roll = this.#roll(dice, turn);
       const penalty = actionId === "power" ? 3 : 0;
@@ -3140,6 +3380,7 @@ dialog > p:not(.eyebrow) {
       turn.lines.push(
         `d20 ${roll} + ${character.attackBonus}${penalty ? " − 3" : ""} / 방어 ${this.#monster.defense} · ${hit ? "명중" : "빗나감, 견제"}. 적에게 ${damage} 피해.`
       );
+      return !hit;
     }
     /** 생존한 적의 반격을 판정합니다. 자연 20은 추가 피해 2, 빗나감은 피해 0입니다. */
     #enemyTurn(character, dice, turn) {
@@ -3263,7 +3504,7 @@ dialog > p:not(.eyebrow) {
   // domain/adventure.mjs
   var INVESTIGATION_SCENES = ["chapel", "archive", "river"];
   var MAX_INVESTIGATIONS = 2;
-  var SAVE_VERSION = 2;
+  var SAVE_VERSION = 3;
   var Adventure = class _Adventure {
     // 능력치·기력·경험치를 관리하는 플레이어 객체입니다.
     #character;
@@ -3285,6 +3526,8 @@ dialog > p:not(.eyebrow) {
     #encounterChoice = null;
     // 종료된 전투의 표시용 결과. 진행 중 전투와 분리해 중복 보상을 막습니다.
     #lastBattle = null;
+    // 이 인덱스 이전의 입력은 디버프 도입 전 규칙으로 재생합니다. 새 모험은 처음부터 적용합니다.
+    #debuffsFrom = 0;
     /** 출신 ID와 주사위 객체로 새 모험을 만듭니다. 주사위를 주입하면 테스트에서도 같은 규칙을 사용할 수 있습니다. */
     constructor(originId = "warden", skillCheck = new SkillCheck()) {
       this.#character = new Character(originId);
@@ -3456,6 +3699,10 @@ dialog > p:not(.eyebrow) {
       this.#lastBattle = null;
       this.#moveTo(transition.next);
     }
+    /** 저장 복구 중에도 행동 기록의 위치로 적용할 규칙을 결정합니다. */
+    get #debuffsEnabled() {
+      return this.#history.length >= this.#debuffsFrom;
+    }
     /** 실제 플레이에 사용하는 전투 진입점. 저장 복구용 주사위와 구분해 현재 난수 생성기를 사용합니다. */
     performCombatAction(actionId) {
       this.#performCombatAction(actionId, this.#skillCheck);
@@ -3464,7 +3711,9 @@ dialog > p:not(.eyebrow) {
     #performCombatAction(actionId, dice) {
       if (!this.#combat) throw new Error("진행 중인 전투가 없습니다.");
       const sceneId = this.#sceneId;
-      const turn = this.#combat.act(actionId, this.#character, dice);
+      const turn = this.#combat.act(actionId, this.#character, dice, {
+        debuffsEnabled: this.#debuffsEnabled
+      });
       const status = this.#combat.status;
       if (this.#combat.isOver) {
         this.#settleBattle();
@@ -3518,6 +3767,7 @@ dialog > p:not(.eyebrow) {
     }
     /** 판정을 기록한 뒤 전투 시작 또는 이야기 이동을 처리합니다. 전투는 끝날 때까지 현재 장면에 머뭅니다. */
     #applyChoice(choice, skillCheck) {
+      const debuffsEnabled = this.#debuffsEnabled;
       const result = choice.check ? skillCheck.resolve(choice, this.#character) : null;
       this.#lastBattle = null;
       this.#lastCheck = result;
@@ -3536,9 +3786,10 @@ dialog > p:not(.eyebrow) {
         );
         return;
       }
-      this.#applyConsequences(choice, result);
+      this.#applyConsequences(choice, result, debuffsEnabled);
       if (choice.rest) this.#character.rest();
       this.#moveTo(choice.next);
+      if (debuffsEnabled && this.isFinished) this.#character.rest();
     }
     /** 현재 장면을 바꾸고 처음 방문한 장소만 방문 목록에 추가합니다. */
     #moveTo(sceneId) {
@@ -3546,11 +3797,21 @@ dialog > p:not(.eyebrow) {
       if (!this.hasVisited(sceneId)) this.#visited.push(sceneId);
     }
     /** 단서·실패 피해·소지품을 반영합니다. discover는 무조건 발견, clue는 판정 성공 때만 발견합니다. */
-    #applyConsequences(choice, result) {
+    #applyConsequences(choice, result, debuffsEnabled) {
       const clue = choice.discover ?? (result?.success ? choice.clue : null);
       if (clue && !this.#clues.includes(clue)) this.#clues.push(clue);
       if (result && !result.success)
         this.#character.takeDamage(choice.damage ?? 0);
+      if (result && debuffsEnabled) {
+        const changes = this.#character.advanceStatuses().map((effect) => `지속 종료 · ${effect.name}`);
+        if (!result.success)
+          changes.push(
+            StatusEffects.describe(
+              this.#character.applyStatus(FAILURE_STATUSES[result.stat])
+            )
+          );
+        if (changes.length) result.statusChanges = changes;
+      }
       this.#character.addItem(choice.add);
     }
     /** 모험 상태를 독립적으로 복제합니다. 난수 생성기는 공유하므로 난수 스트림까지 독립 복제하는 것은 아닙니다. */
@@ -3565,12 +3826,15 @@ dialog > p:not(.eyebrow) {
       copy.#combat = this.#combat?.clone() ?? null;
       copy.#encounterChoice = this.#encounterChoice;
       copy.#lastBattle = this.lastBattle;
+      copy.#debuffsFrom = this.#debuffsFrom;
       return copy;
     }
     /** JSON으로 저장할 수 있는 일반 객체를 만듭니다. 필드 이름은 저장 형식이므로 바꿀 때 마이그레이션이 필요합니다. */
     toSnapshot() {
       return {
         version: SAVE_VERSION,
+        debuffsFrom: this.#debuffsFrom,
+        statuses: this.#character.statuses,
         origin: this.#character.originId,
         scene: this.#sceneId,
         hp: this.#character.health,
@@ -3586,12 +3850,13 @@ dialog > p:not(.eyebrow) {
       };
     }
     /**
-     * v1·v2 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
+     * v1·v2·v3 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
      * 저장된 HP·경험치 값을 대입하지 않고 실제 선택 결과로 다시 계산합니다.
      */
     static fromSnapshot(snapshot, skillCheck = new SkillCheck()) {
       if (!_Adventure.#hasValidMetadata(snapshot)) return null;
       const adventure = new _Adventure(snapshot.origin, skillCheck);
+      adventure.#debuffsFrom = snapshot.version < SAVE_VERSION ? snapshot.log.length : snapshot.debuffsFrom;
       try {
         for (const entry of snapshot.log) {
           if (!entry || entry.scene !== adventure.sceneId) return null;
@@ -3611,7 +3876,7 @@ dialog > p:not(.eyebrow) {
       }
       return adventure.sceneId === snapshot.scene ? adventure : null;
     }
-    /** v1은 문구, v2는 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
+    /** v1은 문구, v2·v3는 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
     #replayChoice(entry, legacy) {
       const choice = this.choices.find(
         (choice2) => legacy ? choice2.label === entry.label : choice2.id === entry.choiceId
@@ -3638,10 +3903,10 @@ dialog > p:not(.eyebrow) {
       this.#performCombatAction(entry.actionId, dice);
       return cursor === rolls.length;
     }
-    /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2는 반복 전투를 허용합니다. */
+    /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2·v3는 반복 전투를 허용합니다. */
     static #hasValidMetadata(snapshot) {
       return Boolean(
-        snapshot && [1, SAVE_VERSION].includes(snapshot.version) && Object.hasOwn(ORIGINS, snapshot.origin) && Object.hasOwn(SCENES, snapshot.scene) && Array.isArray(snapshot.log) && (snapshot.version !== 1 || snapshot.log.length <= 20)
+        snapshot && [1, 2, SAVE_VERSION].includes(snapshot.version) && Object.hasOwn(ORIGINS, snapshot.origin) && Object.hasOwn(SCENES, snapshot.scene) && Array.isArray(snapshot.log) && (snapshot.version !== SAVE_VERSION || Number.isSafeInteger(snapshot.debuffsFrom) && snapshot.debuffsFrom >= 0 && snapshot.debuffsFrom <= snapshot.log.length) && (snapshot.version !== 1 || snapshot.log.length <= 20)
       );
     }
     /** 저장에서 읽은 값이 실제 d20의 정수 범위 1~20인지 확인합니다. */
@@ -3740,12 +4005,24 @@ dialog > p:not(.eyebrow) {
         if (entry.result) {
           const result = entry.result;
           lines.push(
-            `판정: ${result.roll} + ${result.bonus} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`,
+            `판정: ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`,
             result.text
           );
         }
+        if (entry.result?.statusPenalty)
+          lines.push(`상태 이상 보정: −${entry.result.statusPenalty}`);
+        if (entry.result?.statusChanges)
+          lines.push(...entry.result.statusChanges);
         if (entry.combat) lines.push(...entry.combat.lines);
       }
+      if (character.statuses.length)
+        lines.push(
+          "",
+          "## 현재 상태 이상",
+          ...character.statuses.map(
+            (effect) => `- ${effect.name}: ${effect.effect} · 남은 ${effect.remaining}회`
+          )
+        );
       lines.push("", "## 에필로그", ...adventure.scene.paragraphs);
       return lines.join("\n");
     }
@@ -3773,8 +4050,39 @@ dialog > p:not(.eyebrow) {
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
   }
 
+  // ui/status-view.mjs
+  var StatusView = class {
+    /** 캐릭터가 반환한 복사본으로 다시 그려 오래된 상태 카드가 남지 않게 합니다. */
+    render(character) {
+      const panel = getElement("status-effects");
+      panel.replaceChildren(createElement("h3", "상태 이상"));
+      if (!character.statuses.length) {
+        panel.append(createElement("p", "상태 이상 없음", "status-clear"));
+        return;
+      }
+      for (const effect of character.statuses) {
+        const card = createElement("div", void 0, "status-card");
+        card.append(
+          createElement("strong", `${effect.name} · 남은 ${effect.remaining}회`),
+          createElement("p", effect.effect),
+          createElement("small", effect.lore)
+        );
+        panel.append(card);
+      }
+      panel.append(
+        createElement(
+          "p",
+          "다음 판정·공격·응급 처치마다 1회 소모. 이동·후퇴는 소모하지 않습니다. 휴식: 전부 해제 / 응급 처치: 먼저 걸린 상태 1개 해제. 레벨업으로는 해제되지 않습니다.",
+          "status-help"
+        )
+      );
+    }
+  };
+
   // ui/character-view.mjs
   var CharacterView = class {
+    // 상태 표시는 전담 View로 분리합니다.
+    #statusView = new StatusView();
     /** 출신 설명·현재 능력치·기력·경험치·소지품을 한 번에 갱신합니다. 성장 수치는 Character가 계산합니다. */
     render(adventure) {
       const character = adventure.character;
@@ -3784,7 +4092,8 @@ dialog > p:not(.eyebrow) {
       getElement("class-subtitle").textContent = origin.subtitle;
       this.#renderOriginButton(adventure.hasStarted);
       this.#renderHealth(character);
-      this.#renderStats(character.stats);
+      this.#renderStats(character);
+      this.#statusView.render(character);
       this.#renderProgression(character);
       getElement("inventory").replaceChildren(
         ...character.items.map((item) => createElement("li", item))
@@ -3809,13 +4118,18 @@ dialog > p:not(.eyebrow) {
       getElement("experience-bar").style.width = progress.required === null ? "100%" : `${progress.current / progress.required * 100}%`;
     }
     /** 능력치 키를 한국어 이름으로 바꾸고 보정값 카드를 만듭니다. */
-    #renderStats(stats) {
-      const cards = Object.entries(stats).map(([stat, bonus]) => {
+    #renderStats(character) {
+      const cards = Object.entries(character.stats).map(([stat, bonus]) => {
         const card = createElement("div", void 0, "stat");
         card.append(
           createElement("span", STAT_NAMES[stat]),
-          createElement("strong", `+${bonus}`)
+          createElement("strong", `${bonus >= 0 ? "+" : ""}${bonus}`)
         );
+        const penalty = character.statusPenaltyFor(stat);
+        if (penalty) {
+          card.classList.add("stat-reduced");
+          card.title = `기본 ${character.baseStats[stat]} − 상태 이상 ${penalty} = ${bonus}`;
+        }
         return card;
       });
       getElement("stats").replaceChildren(...cards);
@@ -3911,12 +4225,22 @@ dialog > p:not(.eyebrow) {
       container.hidden = !result;
       if (!result) return;
       const outcome = result.success ? "판정 성공" : "판정 실패";
-      const label = `${outcome} · ${STAT_NAMES[result.stat]} ${result.roll} + ${result.bonus} / 난이도 ${result.dc}`;
+      const label = `${outcome} · ${STAT_NAMES[result.stat]} ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc}`;
       const description = createElement("div");
       description.append(
         createElement("div", label, "roll-label"),
         createElement("p", result.text)
       );
+      if (result.statusPenalty)
+        description.append(
+          createElement(
+            "p",
+            `기본 보정 ${result.baseBonus} − 상태 이상 ${result.statusPenalty} = 적용 ${result.bonus}`,
+            "status-event"
+          )
+        );
+      for (const change of result.statusChanges ?? [])
+        description.append(createElement("p", change, "status-event"));
       container.className = `roll-result ${result.success ? "success" : "failure"}`;
       container.append(
         createElement("div", String(result.roll), "die"),
@@ -3929,19 +4253,39 @@ dialog > p:not(.eyebrow) {
         (choice, index) => this.#createChoiceButton(
           choice,
           index,
-          adventure.encounterPreview(choice.id)
+          adventure.encounterPreview(choice.id),
+          adventure.character
         )
       );
       getElement("choices").replaceChildren(...buttons);
     }
     /** 화면 문구와 순번을 만들고 클릭 시 고정 ID만 전달합니다. 배율 표시는 1.25를 125%로 바꿉니다. */
-    #createChoiceButton(choice, index, preview) {
+    #createChoiceButton(choice, index, preview, character) {
       const button = createElement("button", void 0, "choice");
       const description = createElement("span");
       description.append(
         createElement("span", choice.label, "choice-title"),
         createElement("span", choice.detail, "choice-detail")
       );
+      if (choice.check) {
+        const effect = STATUS_EFFECTS[FAILURE_STATUSES[choice.check.stat]];
+        description.append(
+          createElement(
+            "span",
+            `실패 시 ${effect.name} · ${effect.effect} · 이후 위험 행동 3회`,
+            "check-risk"
+          )
+        );
+        const penalty = character.statusPenaltyFor(choice.check.stat);
+        if (penalty)
+          description.append(
+            createElement(
+              "span",
+              `현재 상태 이상으로 이 판정 −${penalty}`,
+              "check-risk"
+            )
+          );
+      }
       if (preview) {
         const reward = `${preview.reward.amount} XP · 기본 ${preview.reward.base} × ${Math.round(preview.reward.multiplier * 100)}%`;
         description.append(createElement("span", reward, "encounter-reward"));
@@ -4000,6 +4344,11 @@ dialog > p:not(.eyebrow) {
       title: "세 성인과 빈 의자",
       tag: "신앙",
       body: "길의 성인 에른, 불씨의 성녀 마라, 끝의 성인 세브를 기린다. 신의 직접적인 목소리를 들었다는 주장은 교단도 인정하지 않는다. 마을 잔칫상에는 돌아오지 못한 이를 위한 빈 의자를 둔다. 종이 없는 안개벌 사람들은 노래로 이름을 잇는다."
+    },
+    {
+      title: "몸과 기억에 남는 잔향",
+      tag: "생활",
+      body: "잊힌 이름을 쫓다 다친 몸에는 갈대 상처가, 지워진 글자를 오래 본 눈에는 기억 혼탁이 남는다. 놓친 목소리와 빗나간 칼끝은 메아리 공포를 부른다. 길을 걷는 것만으로는 씻기지 않지만, 안전한 잠자리와 서로의 이름을 확인하는 일은 회복을 돕는다. 전투 중의 응급 처치도 상처나 혼란 하나를 덜어낼 수 있다. 숙련이 늘어도 치료를 대신하지는 못한다."
     }
   ];
 
@@ -4230,12 +4579,22 @@ dialog > p:not(.eyebrow) {
         );
         if (entry.result) {
           const result = entry.result;
-          const label = `d20 ${result.roll} + ${result.bonus} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`;
+          const label = `d20 ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`;
           item.append(
             createElement("div", label, "log-roll"),
             createElement("p", result.text)
           );
         }
+        if (entry.result?.statusPenalty)
+          item.append(
+            createElement(
+              "p",
+              `상태 이상 보정 −${entry.result.statusPenalty}`,
+              "status-event"
+            )
+          );
+        for (const change of entry.result?.statusChanges ?? [])
+          item.append(createElement("p", change, "status-event"));
         if (entry.combat) {
           for (const line of entry.combat.lines)
             item.append(createElement("p", line));
@@ -4299,6 +4658,13 @@ dialog > p:not(.eyebrow) {
           "combat-reward"
         )
       );
+      this.#panel.append(
+        createElement(
+          "p",
+          `나의 명중 +${character.attackBonus} · 기본 피해 ${character.attackDamage} · 방어 ${character.defense}. 빗나가면 메아리 공포: 다음 위험 행동 3회, 의지·방어 −2.`,
+          "combat-modifiers"
+        )
+      );
       const meter = createElement("progress");
       meter.max = battle.monster.health;
       meter.value = battle.enemyHealth;
@@ -4316,7 +4682,7 @@ dialog > p:not(.eyebrow) {
             actionId === "recover" ? `${action.detail} · 남은 ${battle.remedies}회` : action.detail
           )
         );
-        button.disabled = actionId === "recover" && (battle.remedies === 0 || character.health === character.maxHealth);
+        button.disabled = actionId === "recover" && (battle.remedies === 0 || character.health === character.maxHealth && character.statuses.length === 0);
         button.addEventListener("click", () => this.#onAction(actionId));
         actions.append(button);
       }

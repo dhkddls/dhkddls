@@ -156,12 +156,12 @@ export const MONSTERS = {
 export const COMBAT_ACTIONS = {
   attack: {
     name: "기본 공격",
-    detail: "가장 높은 능력치로 판정 · 빗나가도 1 피해",
+    detail: "최고 기본 능력치와 상태 명중 보정 · 빗나가도 1 피해",
   },
   power: { name: "결정타", detail: "명중 보정 −3 · 적중 피해 +3" },
   recover: {
     name: "응급 처치",
-    detail: "기력 4 + 레벨 회복 · 전투당 2회 · 적도 행동",
+    detail: "기력 4 + 레벨 회복 · 상태 이상 1개 해제 · 전투당 2회 · 적도 행동",
   },
   flee: { name: "안전한 곳으로 후퇴", detail: "항상 성공 · 경험치 없음" },
 };

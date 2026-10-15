@@ -119,14 +119,16 @@ test("잘못된 저장과 불가능한 이동은 거부하고 상태는 기록�
   assert.equal(Adventure.fromSnapshot(invalidRoll), null);
 });
 
-// 검증 목적: 실제 이전 코드가 만든 JSON을 v2로 옮겨도 기존 진행은 같고 이후 새 주사위는 1이 되는지 확인합니다.
+// 검증 목적: 실제 이전 코드가 만든 JSON을 v3로 옮겨도 기존 진행은 같고 이후 새 주사위는 1이 되는지 확인합니다.
 test("리팩터링 전 v1 저장을 그대로 복구하고 이후에는 새 주사위를 굴린다", () => {
   const adventure = Adventure.fromSnapshot(
     originalSave,
     new SkillCheck(() => 0),
   );
   const migrated = adventure.toSnapshot();
-  assert.equal(migrated.version, 2);
+  assert.equal(migrated.version, 3);
+  assert.equal(migrated.debuffsFrom, originalSave.log.length);
+  assert.deepEqual(migrated.statuses, []);
   assert.equal(migrated.level, 1);
   assert.equal(migrated.experience, 0);
   const legacyFields = {

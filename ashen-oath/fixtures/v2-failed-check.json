@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "origin": "warden",
+  "scene": "inn",
+  "hp": 9,
+  "level": 1,
+  "experience": 0,
+  "clues": [],
+  "items": [
+    "금이 간 기사 인장"
+  ],
+  "visited": [
+    "arrival",
+    "inn"
+  ],
+  "log": [
+    {
+      "kind": "choice",
+      "choiceId": "listen",
+      "scene": "arrival",
+      "label": "소녀에게 나무패에 관해 묻는다",
+      "result": {
+        "roll": 1,
+        "bonus": 2,
+        "dc": 11,
+        "stat": "spirit",
+        "success": false,
+        "text": "소녀는 고개를 젓는다. “엄마도 처음엔 그저 물어봤어요.” 더 묻지 않고 함께 길을 걷는다. 등불의 불빛이 조금 낮아진다."
+      }
+    }
+  ],
+  "last": {
+    "roll": 1,
+    "bonus": 2,
+    "dc": 11,
+    "stat": "spirit",
+    "success": false,
+    "text": "소녀는 고개를 젓는다. “엄마도 처음엔 그저 물어봤어요.” 더 묻지 않고 함께 길을 걷는다. 등불의 불빛이 조금 낮아진다."
+  },
+  "combat": null,
+  "lastBattle": null
+}

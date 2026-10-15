@@ -10,3 +10,4 @@ export { SkillCheck } from "./domain/skill-check.mjs";
 export { CombatSession } from "./domain/combat-session.mjs";
 export { ExperiencePolicy } from "./domain/experience-policy.mjs";
 export { CampaignResolution } from "./domain/campaign-resolution.mjs";
+export { StatusEffects } from "./domain/status-effects.mjs";

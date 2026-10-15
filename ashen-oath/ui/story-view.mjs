@@ -5,6 +5,7 @@
 
 import { STAT_NAMES } from "../data/origins.mjs";
 import { ACT_PRESENTATION } from "../data/campaign.mjs";
+import { FAILURE_STATUSES, STATUS_EFFECTS } from "../data/status-effects.mjs";
 import { createElement, getElement } from "./dom.mjs";
 
 export class StoryView {
@@ -112,12 +113,22 @@ export class StoryView {
     if (!result) return;
 
     const outcome = result.success ? "판정 성공" : "판정 실패";
-    const label = `${outcome} · ${STAT_NAMES[result.stat]} ${result.roll} + ${result.bonus} / 난이도 ${result.dc}`;
+    const label = `${outcome} · ${STAT_NAMES[result.stat]} ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc}`;
     const description = createElement("div");
     description.append(
       createElement("div", label, "roll-label"),
       createElement("p", result.text),
     );
+    if (result.statusPenalty)
+      description.append(
+        createElement(
+          "p",
+          `기본 보정 ${result.baseBonus} − 상태 이상 ${result.statusPenalty} = 적용 ${result.bonus}`,
+          "status-event",
+        ),
+      );
+    for (const change of result.statusChanges ?? [])
+      description.append(createElement("p", change, "status-event"));
     container.className = `roll-result ${result.success ? "success" : "failure"}`;
     container.append(
       createElement("div", String(result.roll), "die"),
@@ -132,19 +143,39 @@ export class StoryView {
         choice,
         index,
         adventure.encounterPreview(choice.id),
+        adventure.character,
       ),
     );
     getElement("choices").replaceChildren(...buttons);
   }
 
   /** 화면 문구와 순번을 만들고 클릭 시 고정 ID만 전달합니다. 배율 표시는 1.25를 125%로 바꿉니다. */
-  #createChoiceButton(choice, index, preview) {
+  #createChoiceButton(choice, index, preview, character) {
     const button = createElement("button", undefined, "choice");
     const description = createElement("span");
     description.append(
       createElement("span", choice.label, "choice-title"),
       createElement("span", choice.detail, "choice-detail"),
     );
+    if (choice.check) {
+      const effect = STATUS_EFFECTS[FAILURE_STATUSES[choice.check.stat]];
+      description.append(
+        createElement(
+          "span",
+          `실패 시 ${effect.name} · ${effect.effect} · 이후 위험 행동 3회`,
+          "check-risk",
+        ),
+      );
+      const penalty = character.statusPenaltyFor(choice.check.stat);
+      if (penalty)
+        description.append(
+          createElement(
+            "span",
+            `현재 상태 이상으로 이 판정 −${penalty}`,
+            "check-risk",
+          ),
+        );
+    }
     if (preview) {
       const reward = `${preview.reward.amount} XP · 기본 ${preview.reward.base} × ${Math.round(preview.reward.multiplier * 100)}%`;
       description.append(createElement("span", reward, "encounter-reward"));

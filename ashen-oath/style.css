@@ -1306,3 +1306,64 @@ dialog > p:not(.eyebrow) {
     grid-template-columns: 1fr;
   }
 }
+
+/* 상태는 캐릭터 패널 안에 표시합니다. 감소한 수치와 해제 방법을 색상 외에 글로도 안내합니다. */
+.status-effects {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.status-effects h3 {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gold);
+  margin: 0 0 10px;
+}
+.status-clear {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 0;
+}
+.status-card {
+  padding: 10px;
+  margin: 8px 0;
+  background: #30241e;
+  border-left: 2px solid #bf8e6d;
+}
+.status-card strong {
+  font-size: 11px;
+  color: #e4b99b;
+}
+.status-card p,
+.status-card small,
+.status-help {
+  display: block;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #c3b5a5;
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+.stat-reduced strong {
+  color: #e4b99b;
+}
+.status-event,
+.check-risk {
+  display: block;
+  font-size: 10px;
+  color: #dfb898;
+  line-height: 1.8;
+  margin-top: 5px;
+}
+.combat-modifiers {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #c9b89e;
+}
+@media (max-width: 620px) {
+  .status-effects {
+    grid-column: 1 / -1;
+    margin-top: 14px;
+  }
+}

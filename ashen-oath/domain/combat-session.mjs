@@ -5,6 +5,7 @@
 
 import { COMBAT_ACTIONS } from "../data/monsters.mjs";
 import { ExperiencePolicy } from "./experience-policy.mjs";
+import { StatusEffects } from "./status-effects.mjs";
 
 /** 한 번의 전투만 소유합니다. 보상 지급과 장면 이동은 Adventure의 책임입니다. */
 export class CombatSession {
@@ -47,7 +48,7 @@ export class CombatSession {
    * 행동을 검증한 뒤 플레이어 → 생존한 적 순서로 한 턴을 진행합니다.
    * 후퇴는 즉시 종료하고, 소진된 치료 등 잘못된 행동은 턴을 소비하기 전에 거부합니다.
    */
-  act(actionId, character, dice) {
+  act(actionId, character, dice, { debuffsEnabled = true } = {}) {
     if (this.isOver || !Object.hasOwn(COMBAT_ACTIONS, actionId)) {
       throw new Error("현재 사용할 수 없는 전투 행동입니다.");
     }
@@ -69,7 +70,13 @@ export class CombatSession {
           "교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다.",
       );
     } else {
-      this.#playerTurn(actionId, character, dice, turn);
+      const missed = this.#playerTurn(
+        actionId,
+        character,
+        dice,
+        turn,
+        debuffsEnabled,
+      );
       // 처치한 적은 반격하지 않습니다. 먼저 승리를 판정한 뒤 살아 있는 경우에만 적 차례로 넘어갑니다.
       if (this.#enemyHealth === 0) {
         this.#status = "victory";
@@ -84,6 +91,15 @@ export class CombatSession {
           );
         }
       }
+      if (debuffsEnabled) {
+        // 현재 턴의 공격과 반격에는 기존 효과가 끝까지 적용됩니다. 새 공포는 다음 턴부터입니다.
+        for (const effect of character.advanceStatuses())
+          turn.lines.push(`지속 종료 · ${effect.name}`);
+        if (missed)
+          turn.lines.push(
+            StatusEffects.describe(character.applyStatus("dread")),
+          );
+      }
     }
     this.#turns.push(turn);
     return structuredClone(turn);
@@ -97,7 +113,7 @@ export class CombatSession {
   }
 
   /** 치료는 횟수를 소모하고, 공격은 명중·피해를 계산합니다. 결정타는 명중 −3 대신 적중 피해 +3입니다. */
-  #playerTurn(actionId, character, dice, turn) {
+  #playerTurn(actionId, character, dice, turn, debuffsEnabled) {
     if (actionId === "recover") {
       const before = character.health;
       character.heal(4 + character.level);
@@ -105,7 +121,14 @@ export class CombatSession {
       turn.lines.push(
         `응급 처치로 기력 ${character.health - before} 회복. 남은 처치 ${this.#remedies}회.`,
       );
-      return;
+      if (debuffsEnabled) {
+        const relieved = character.relieveStatus();
+        if (relieved)
+          turn.lines.push(
+            `응급 처치 · ${relieved.name} 해제. 다른 상태의 지속은 이번 행동에도 줄어듭니다.`,
+          );
+      }
+      return false;
     }
     const roll = this.#roll(dice, turn);
     const penalty = actionId === "power" ? 3 : 0;
@@ -122,6 +145,7 @@ export class CombatSession {
     turn.lines.push(
       `d20 ${roll} + ${character.attackBonus}${penalty ? " − 3" : ""} / 방어 ${this.#monster.defense} · ${hit ? "명중" : "빗나감, 견제"}. 적에게 ${damage} 피해.`,
     );
+    return !hit;
   }
 
   /** 생존한 적의 반격을 판정합니다. 자연 20은 추가 피해 2, 빗나감은 피해 0입니다. */

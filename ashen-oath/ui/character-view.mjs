@@ -5,8 +5,11 @@
 
 import { STAT_NAMES } from "../data/origins.mjs";
 import { createElement, getElement } from "./dom.mjs";
+import { StatusView } from "./status-view.mjs";
 
 export class CharacterView {
+  // 상태 표시는 전담 View로 분리합니다.
+  #statusView = new StatusView();
   /** 출신 설명·현재 능력치·기력·경험치·소지품을 한 번에 갱신합니다. 성장 수치는 Character가 계산합니다. */
   render(adventure) {
     const character = adventure.character;
@@ -16,7 +19,8 @@ export class CharacterView {
     getElement("class-subtitle").textContent = origin.subtitle;
     this.#renderOriginButton(adventure.hasStarted);
     this.#renderHealth(character);
-    this.#renderStats(character.stats);
+    this.#renderStats(character);
+    this.#statusView.render(character);
     this.#renderProgression(character);
     getElement("inventory").replaceChildren(
       ...character.items.map((item) => createElement("li", item)),
@@ -56,13 +60,18 @@ export class CharacterView {
   }
 
   /** 능력치 키를 한국어 이름으로 바꾸고 보정값 카드를 만듭니다. */
-  #renderStats(stats) {
-    const cards = Object.entries(stats).map(([stat, bonus]) => {
+  #renderStats(character) {
+    const cards = Object.entries(character.stats).map(([stat, bonus]) => {
       const card = createElement("div", undefined, "stat");
       card.append(
         createElement("span", STAT_NAMES[stat]),
-        createElement("strong", `+${bonus}`),
+        createElement("strong", `${bonus >= 0 ? "+" : ""}${bonus}`),
       );
+      const penalty = character.statusPenaltyFor(stat);
+      if (penalty) {
+        card.classList.add("stat-reduced");
+        card.title = `기본 ${character.baseStats[stat]} − 상태 이상 ${penalty} = ${bonus}`;
+      }
       return card;
     });
     getElement("stats").replaceChildren(...cards);

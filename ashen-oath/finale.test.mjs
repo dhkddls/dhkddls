@@ -29,11 +29,21 @@ function fixture(name) {
 }
 
 test("변경 전 v2 저장은 높은 누적 경험치와 전투 중 수치까지 정확히 복원한다", () => {
-  for (const name of ["v2-act2-complete", "v2-high-experience"]) {
+  for (const name of [
+    "v2-act2-complete",
+    "v2-high-experience",
+    "v2-failed-check",
+    "v2-failed-combat",
+  ]) {
     const original = fixture(name);
     const game = SaveRepository.decode(JSON.stringify(original));
     assert.ok(game);
-    assert.deepEqual(game.toSnapshot(), original);
+    assert.deepEqual(game.toSnapshot(), {
+      ...original,
+      version: 3,
+      debuffsFrom: original.log.length,
+      statuses: [],
+    });
   }
   const high = Adventure.fromSnapshot(fixture("v2-high-experience"));
   assert.equal(high.character.level, 5);

@@ -65,6 +65,13 @@ export class CombatView {
         "combat-reward",
       ),
     );
+    this.#panel.append(
+      createElement(
+        "p",
+        `나의 명중 +${character.attackBonus} · 기본 피해 ${character.attackDamage} · 방어 ${character.defense}. 빗나가면 메아리 공포: 다음 위험 행동 3회, 의지·방어 −2.`,
+        "combat-modifiers",
+      ),
+    );
     const meter = createElement("progress");
     meter.max = battle.monster.health;
     meter.value = battle.enemyHealth;
@@ -88,7 +95,9 @@ export class CombatView {
       // 화면에서도 불가능하거나 불필요한 치료를 잠급니다. 소진 여부는 도메인에서도 별도로 검사합니다.
       button.disabled =
         actionId === "recover" &&
-        (battle.remedies === 0 || character.health === character.maxHealth);
+        (battle.remedies === 0 ||
+          (character.health === character.maxHealth &&
+            character.statuses.length === 0));
       button.addEventListener("click", () => this.#onAction(actionId));
       actions.append(button);
     }

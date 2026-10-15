@@ -14,13 +14,15 @@ import { CombatSession } from "./combat-session.mjs";
 import { ExperiencePolicy } from "./experience-policy.mjs";
 import { CampaignResolution } from "./campaign-resolution.mjs";
 import { CHAPTER_TRANSITIONS, FINAL_EVIDENCE } from "../data/campaign.mjs";
+import { FAILURE_STATUSES } from "../data/status-effects.mjs";
+import { StatusEffects } from "./status-effects.mjs";
 
 // 초반부의 조사 장소만 횟수 제한에 포함합니다. 중반부 반복 전투와 구분합니다.
 const INVESTIGATION_SCENES = ["chapel", "archive", "river"];
 // 새벽 전 조사할 수 있는 장소 수. 이 값만 바꾸면 선택지 필터도 함께 바뀝니다.
 const MAX_INVESTIGATIONS = 2;
-// 현재 저장 형식. 이전 v1은 fromSnapshot에서 별도로 읽습니다.
-const SAVE_VERSION = 2;
+// v3는 디버프 적용 시작점을 저장하여 이전 기록에 새 규칙을 소급 적용하지 않습니다.
+const SAVE_VERSION = 3;
 
 /** 이야기·전투를 연결하고 보상을 한 번만 지급합니다. 브라우저에는 의존하지 않습니다. */
 export class Adventure {
@@ -44,6 +46,8 @@ export class Adventure {
   #encounterChoice = null;
   // 종료된 전투의 표시용 결과. 진행 중 전투와 분리해 중복 보상을 막습니다.
   #lastBattle = null;
+  // 이 인덱스 이전의 입력은 디버프 도입 전 규칙으로 재생합니다. 새 모험은 처음부터 적용합니다.
+  #debuffsFrom = 0;
 
   /** 출신 ID와 주사위 객체로 새 모험을 만듭니다. 주사위를 주입하면 테스트에서도 같은 규칙을 사용할 수 있습니다. */
   constructor(originId = "warden", skillCheck = new SkillCheck()) {
@@ -223,6 +227,11 @@ export class Adventure {
     this.#moveTo(transition.next);
   }
 
+  /** 저장 복구 중에도 행동 기록의 위치로 적용할 규칙을 결정합니다. */
+  get #debuffsEnabled() {
+    return this.#history.length >= this.#debuffsFrom;
+  }
+
   /** 실제 플레이에 사용하는 전투 진입점. 저장 복구용 주사위와 구분해 현재 난수 생성기를 사용합니다. */
   performCombatAction(actionId) {
     this.#performCombatAction(actionId, this.#skillCheck);
@@ -232,7 +241,9 @@ export class Adventure {
   #performCombatAction(actionId, dice) {
     if (!this.#combat) throw new Error("진행 중인 전투가 없습니다.");
     const sceneId = this.#sceneId;
-    const turn = this.#combat.act(actionId, this.#character, dice);
+    const turn = this.#combat.act(actionId, this.#character, dice, {
+      debuffsEnabled: this.#debuffsEnabled,
+    });
     // 정산하면 #combat이 null이 되므로 종료 상태를 먼저 보관합니다.
     const status = this.#combat.status;
     if (this.#combat.isOver) {
@@ -298,6 +309,7 @@ export class Adventure {
 
   /** 판정을 기록한 뒤 전투 시작 또는 이야기 이동을 처리합니다. 전투는 끝날 때까지 현재 장면에 머뭅니다. */
   #applyChoice(choice, skillCheck) {
+    const debuffsEnabled = this.#debuffsEnabled;
     const result = choice.check
       ? skillCheck.resolve(choice, this.#character)
       : null;
@@ -318,9 +330,11 @@ export class Adventure {
       );
       return;
     }
-    this.#applyConsequences(choice, result);
+    this.#applyConsequences(choice, result, debuffsEnabled);
     if (choice.rest) this.#character.rest();
     this.#moveTo(choice.next);
+    // 완결의 일 년 뒤 후일담에는 여행 중 상처를 남겨두지 않습니다.
+    if (debuffsEnabled && this.isFinished) this.#character.rest();
   }
 
   /** 현재 장면을 바꾸고 처음 방문한 장소만 방문 목록에 추가합니다. */
@@ -330,12 +344,25 @@ export class Adventure {
   }
 
   /** 단서·실패 피해·소지품을 반영합니다. discover는 무조건 발견, clue는 판정 성공 때만 발견합니다. */
-  #applyConsequences(choice, result) {
+  #applyConsequences(choice, result, debuffsEnabled) {
     // ??는 무조건 발견 단서가 없을 때만 성공 판정 단서를 사용하도록 합니다.
     const clue = choice.discover ?? (result?.success ? choice.clue : null);
     if (clue && !this.#clues.includes(clue)) this.#clues.push(clue);
     if (result && !result.success)
       this.#character.takeDamage(choice.damage ?? 0);
+    if (result && debuffsEnabled) {
+      // 현재 판정에는 기존 감소량을 사용한 뒤 소모합니다. 새 실패 효과는 다음 행동부터 3회입니다.
+      const changes = this.#character
+        .advanceStatuses()
+        .map((effect) => `지속 종료 · ${effect.name}`);
+      if (!result.success)
+        changes.push(
+          StatusEffects.describe(
+            this.#character.applyStatus(FAILURE_STATUSES[result.stat]),
+          ),
+        );
+      if (changes.length) result.statusChanges = changes;
+    }
     this.#character.addItem(choice.add);
   }
 
@@ -351,6 +378,7 @@ export class Adventure {
     copy.#combat = this.#combat?.clone() ?? null;
     copy.#encounterChoice = this.#encounterChoice;
     copy.#lastBattle = this.lastBattle;
+    copy.#debuffsFrom = this.#debuffsFrom;
     return copy;
   }
 
@@ -358,6 +386,8 @@ export class Adventure {
   toSnapshot() {
     return {
       version: SAVE_VERSION,
+      debuffsFrom: this.#debuffsFrom,
+      statuses: this.#character.statuses,
       origin: this.#character.originId,
       scene: this.#sceneId,
       hp: this.#character.health,
@@ -374,12 +404,17 @@ export class Adventure {
   }
 
   /**
-   * v1·v2 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
+   * v1·v2·v3 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
    * 저장된 HP·경험치 값을 대입하지 않고 실제 선택 결과로 다시 계산합니다.
    */
   static fromSnapshot(snapshot, skillCheck = new SkillCheck()) {
     if (!Adventure.#hasValidMetadata(snapshot)) return null;
     const adventure = new Adventure(snapshot.origin, skillCheck);
+    // 이전 버전의 모든 입력은 그대로 재생한 뒤, 다음 새 행동부터 디버프 규칙을 엽니다.
+    adventure.#debuffsFrom =
+      snapshot.version < SAVE_VERSION
+        ? snapshot.log.length
+        : snapshot.debuffsFrom;
     try {
       // 입력 기록 순서를 그대로 재생합니다. 복구 중 잘못된 행동을 만나면 임시 모험을 버립니다.
       for (const entry of snapshot.log) {
@@ -401,7 +436,7 @@ export class Adventure {
     return adventure.sceneId === snapshot.scene ? adventure : null;
   }
 
-  /** v1은 문구, v2는 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
+  /** v1은 문구, v2·v3는 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
   #replayChoice(entry, legacy) {
     const choice = this.choices.find((choice) =>
       legacy ? choice.label === entry.label : choice.id === entry.choiceId,
@@ -435,14 +470,18 @@ export class Adventure {
     return cursor === rolls.length;
   }
 
-  /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2는 반복 전투를 허용합니다. */
+  /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2·v3는 반복 전투를 허용합니다. */
   static #hasValidMetadata(snapshot) {
     return Boolean(
       snapshot &&
-        [1, SAVE_VERSION].includes(snapshot.version) &&
+        [1, 2, SAVE_VERSION].includes(snapshot.version) &&
         Object.hasOwn(ORIGINS, snapshot.origin) &&
         Object.hasOwn(SCENES, snapshot.scene) &&
         Array.isArray(snapshot.log) &&
+        (snapshot.version !== SAVE_VERSION ||
+          (Number.isSafeInteger(snapshot.debuffsFrom) &&
+            snapshot.debuffsFrom >= 0 &&
+            snapshot.debuffsFrom <= snapshot.log.length)) &&
         (snapshot.version !== 1 || snapshot.log.length <= 20),
     );
   }

@@ -27,6 +27,13 @@ export class SkillCheck {
       stat: choice.check.stat,
       success,
       text: success ? choice.success : choice.failure,
+      // 감소량이 있을 때만 부가 정보를 남겨 이전 저장의 결과 구조를 보존합니다.
+      ...(character.statusPenaltyFor(choice.check.stat)
+        ? {
+            baseBonus: character.baseStats[choice.check.stat],
+            statusPenalty: character.statusPenaltyFor(choice.check.stat),
+          }
+        : {}),
     };
   }
 

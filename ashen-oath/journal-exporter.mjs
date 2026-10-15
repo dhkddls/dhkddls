@@ -40,12 +40,25 @@ export class JournalExporter {
       if (entry.result) {
         const result = entry.result;
         lines.push(
-          `판정: ${result.roll} + ${result.bonus} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`,
+          `판정: ${result.roll} ${result.bonus < 0 ? "−" : "+"} ${Math.abs(result.bonus)} / 난이도 ${result.dc} · ${result.success ? "성공" : "실패"}`,
           result.text,
         );
       }
+      if (entry.result?.statusPenalty)
+        lines.push(`상태 이상 보정: −${entry.result.statusPenalty}`);
+      if (entry.result?.statusChanges)
+        lines.push(...entry.result.statusChanges);
       if (entry.combat) lines.push(...entry.combat.lines);
     }
+    if (character.statuses.length)
+      lines.push(
+        "",
+        "## 현재 상태 이상",
+        ...character.statuses.map(
+          (effect) =>
+            `- ${effect.name}: ${effect.effect} · 남은 ${effect.remaining}회`,
+        ),
+      );
     lines.push("", "## 에필로그", ...adventure.scene.paragraphs);
     return lines.join("\n");
   }
