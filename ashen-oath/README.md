@@ -4,6 +4,21 @@
 
 ## 실행
 
+### 웹사이트에서 온라인 플레이
+
+게시 후 게임 주소는 **<https://dhkddls.github.io/dhkddls/ashen-oath/>**입니다. 설치 없이 컴퓨터·휴대폰의 최신 브라우저에서 플레이할 수 있습니다. <https://dhkddls.github.io/dhkddls/>로 접속해도 게임으로 이동합니다.
+
+저장소 관리자가 최초 한 번 GitHub Pages를 활성화해야 합니다.
+
+1. [저장소 Settings → Pages](https://github.com/dhkddls/dhkddls/settings/pages)를 엽니다.
+2. **Build and deployment → Source**를 **Deploy from a branch**로 선택합니다.
+3. **Branch**에서 **main**, 폴더는 **/(root)**를 선택하고 **Save**를 누릅니다.
+4. [Actions](https://github.com/dhkddls/dhkddls/actions)에서 **pages build and deployment**가 완료된 뒤 게임 주소를 엽니다. 최초 게시에는 몇 분 걸릴 수 있습니다.
+
+게임은 정적 HTML·CSS·JavaScript로 동작하므로 별도 서버나 비밀 키가 필요 없습니다. 이후 `main`에 올린 변경은 GitHub Pages가 자동 반영합니다. 저장소 루트의 `index.html`이 게임 폴더로 안내하고, `.nojekyll`은 Jekyll 변환 없이 원본 파일을 게시하게 합니다. 단일 실행 파일 빌드는 온라인 실행의 필수 단계가 아닙니다.
+
+진행은 접속한 브라우저에 자동 저장됩니다. 다운로드판·다른 브라우저의 기록이 웹사이트로 자동 이동하지는 않습니다. 옮기려면 기존 게임에서 「진행 백업」을 내려받고 웹사이트의 「불러오기」에서 JSON을 선택하세요. 계정 로그인이나 기기 간 자동 동기화는 없습니다.
+
 ### 다운로드해서 바로 실행
 
 이 폴더의 **`play.html`을 다운로드하고 Chrome·Edge·Firefox·Safari 같은 최신 브라우저로 여세요.** JavaScript와 CSS가 포함된 단일 파일이므로 Python·Node.js 설치나 서버 실행이 필요 없습니다. GitHub 파일 화면에서는 **Download raw file** 버튼으로 다운로드할 수 있습니다. GitHub에서 소스 파일을 보는 화면 자체가 게임 실행 화면은 아닙니다.
@@ -19,7 +34,7 @@ cd /workspace/dhkddls/ashen-oath
 python3 -m http.server 8000 --bind 0.0.0.0
 ```
 
-브라우저에서 서버의 8000번 포트를 엽니다. 서버를 자신의 컴퓨터에서 실행했다면 `http://localhost:8000`으로 접속합니다. 클라우드 서버의 localhost는 사용자 컴퓨터에서 접속할 수 없으며 이 작업 환경은 웹 미리보기 연결을 제공하지 않습니다. 직접 플레이하려면 위의 `play.html`을 이용하세요. 개발 원본인 `index.html`은 ES 모듈을 사용하므로 HTTP 서버가 필요합니다.
+브라우저에서 서버의 8000번 포트를 엽니다. 서버를 자신의 컴퓨터에서 실행했다면 `http://localhost:8000`으로 접속합니다. 클라우드 서버의 localhost는 사용자 컴퓨터에서 접속할 수 없으며 이 작업 환경은 웹 미리보기 연결을 제공하지 않습니다. 직접 플레이하려면 게시된 웹사이트나 위의 `play.html`을 이용하세요. 개발 원본인 `index.html`은 ES 모듈을 사용하므로 HTTP 서버가 필요합니다.
 
 ### 단일 실행 파일 갱신
 
@@ -140,4 +155,4 @@ node --test *.test.mjs
 
 `engine.test.mjs`는 초반부 2,160개 분기 경로, 판정 경계, 조사 횟수, 상태 격리와 기존 저장 복구를 검사합니다. `combat.test.mjs`는 경험치 방향·상하한, 레벨 경계, 세 출신·세 결말의 중반 진행, 패배·후퇴, 전투 저장 복구와 보상 중복 방지를 검사합니다. `services.test.mjs`는 저장 권한·용량 오류와 기록 내보내기를 검사합니다. `finale.test.mjs`는 세 출신 × 세 첫 서약 × 세 최종 서약 × 조사 유무의 54경로, 조사 실패, 보스 단계별 재도전과 보상 중복 방지, 전투 중 저장, 장면 연결을 검사합니다. `fixtures/`에는 v1 저장과 변경 전 v2 중반부 완료·누적 경험치가 많은 전투 중 저장을 보존해 새 코드로 복구한 결과를 정확히 비교합니다.
 
-기존 프로필 README와 별개인 하위 프로젝트입니다. GitHub Pages 배포는 아직 설정하지 않았습니다.
+기존 프로필 README와 별개인 하위 프로젝트입니다. GitHub Pages는 위의 `main` / `/(root)` 설정으로 게시합니다.
