@@ -11,6 +11,8 @@ import { JOURNEY_ROUTES } from "../data/midgame-scenes.mjs";
 import { Character } from "./character.mjs";
 import { SkillCheck } from "./skill-check.mjs";
 import { CombatSession } from "./combat-session.mjs";
+import { TacticalSession } from "./tactical-session.mjs";
+import { TACTICAL_MONSTER_STATS } from "../data/tactics.mjs";
 import { ExperiencePolicy } from "./experience-policy.mjs";
 import { CampaignResolution } from "./campaign-resolution.mjs";
 import { CHAPTER_TRANSITIONS, FINAL_EVIDENCE } from "../data/campaign.mjs";
@@ -21,8 +23,8 @@ import { StatusEffects } from "./status-effects.mjs";
 const INVESTIGATION_SCENES = ["chapel", "archive", "river"];
 // 새벽 전 조사할 수 있는 장소 수. 이 값만 바꾸면 선택지 필터도 함께 바뀝니다.
 const MAX_INVESTIGATIONS = 2;
-// v3는 디버프 적용 시작점을 저장하여 이전 기록에 새 규칙을 소급 적용하지 않습니다.
-const SAVE_VERSION = 3;
+// v4는 전술 전투 시작점을 함께 저장합니다. 이전 전투와 디버프 기록은 소급 변경하지 않습니다.
+const SAVE_VERSION = 4;
 
 /** 이야기·전투를 연결하고 보상을 한 번만 지급합니다. 브라우저에는 의존하지 않습니다. */
 export class Adventure {
@@ -48,6 +50,8 @@ export class Adventure {
   #lastBattle = null;
   // 이 인덱스 이전의 입력은 디버프 도입 전 규칙으로 재생합니다. 새 모험은 처음부터 적용합니다.
   #debuffsFrom = 0;
+  // 이전에 시작한 전투는 구형 규칙으로 끝내고 다음 전투부터 전술을 적용합니다.
+  #tacticsFrom = 0;
 
   /** 출신 ID와 주사위 객체로 새 모험을 만듭니다. 주사위를 주입하면 테스트에서도 같은 규칙을 사용할 수 있습니다. */
   constructor(originId = "warden", skillCheck = new SkillCheck()) {
@@ -165,6 +169,20 @@ export class Adventure {
   get combat() {
     return this.#combat?.toSnapshot() ?? null;
   }
+  /** 현재 전투에서 실제로 사용할 수 있는 행동과 이유를 화면에 제공합니다. */
+  get combatActions() {
+    if (this.#combat instanceof TacticalSession)
+      return this.#combat.actions(this.#character);
+    return Object.entries(COMBAT_ACTIONS).map(([id, action]) => ({
+      id,
+      ...action,
+      disabled:
+        id === "recover" &&
+        (this.combat?.remedies === 0 ||
+          (this.#character.health === this.#character.maxHealth &&
+            !this.#character.statuses.length)),
+    }));
+  }
   /** 이미 정산한 전투 결과의 복사본입니다. 실제 획득 경험치와 레벨업 여부를 포함합니다. */
   get lastBattle() {
     return structuredClone(this.#lastBattle);
@@ -190,7 +208,12 @@ export class Adventure {
     const monster = MONSTERS[choice.encounter];
     return {
       choiceId,
-      monster: { ...monster },
+      monster: {
+        ...monster,
+        ...(this.#history.length >= this.#tacticsFrom
+          ? TACTICAL_MONSTER_STATS[monster.id]
+          : {}),
+      },
       reward: ExperiencePolicy.reward(monster, this.#character.level),
       warning: ExperiencePolicy.warning(monster, this.#character.level),
     };
@@ -256,7 +279,7 @@ export class Adventure {
       kind: "combat",
       scene: sceneId,
       actionId,
-      label: COMBAT_ACTIONS[actionId].name,
+      label: turn.label,
       result: null,
       combat: { ...turn, status },
     });
@@ -324,10 +347,12 @@ export class Adventure {
     });
     if (choice.encounter) {
       this.#encounterChoice = choice;
-      this.#combat = new CombatSession(
-        MONSTERS[choice.encounter],
-        this.#character,
-      );
+      this.#combat =
+        this.#history.length - 1 >= this.#tacticsFrom
+          ? new TacticalSession(MONSTERS[choice.encounter], this.#character, {
+              knowledge: [...this.#clues, ...this.#character.items],
+            })
+          : new CombatSession(MONSTERS[choice.encounter], this.#character);
       return;
     }
     this.#applyConsequences(choice, result, debuffsEnabled);
@@ -379,6 +404,7 @@ export class Adventure {
     copy.#encounterChoice = this.#encounterChoice;
     copy.#lastBattle = this.lastBattle;
     copy.#debuffsFrom = this.#debuffsFrom;
+    copy.#tacticsFrom = this.#tacticsFrom;
     return copy;
   }
 
@@ -387,6 +413,7 @@ export class Adventure {
     return {
       version: SAVE_VERSION,
       debuffsFrom: this.#debuffsFrom,
+      tacticsFrom: this.#tacticsFrom,
       statuses: this.#character.statuses,
       origin: this.#character.originId,
       scene: this.#sceneId,
@@ -404,7 +431,7 @@ export class Adventure {
   }
 
   /**
-   * v1·v2·v3 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
+   * v1·v2·v3·v4 기록을 새 모험에 재생해 복구하고, 잘못된 이동이나 주사위는 null로 거부합니다.
    * 저장된 HP·경험치 값을 대입하지 않고 실제 선택 결과로 다시 계산합니다.
    */
   static fromSnapshot(snapshot, skillCheck = new SkillCheck()) {
@@ -412,9 +439,11 @@ export class Adventure {
     const adventure = new Adventure(snapshot.origin, skillCheck);
     // 이전 버전의 모든 입력은 그대로 재생한 뒤, 다음 새 행동부터 디버프 규칙을 엽니다.
     adventure.#debuffsFrom =
+      snapshot.version < 3 ? snapshot.log.length : snapshot.debuffsFrom;
+    adventure.#tacticsFrom =
       snapshot.version < SAVE_VERSION
         ? snapshot.log.length
-        : snapshot.debuffsFrom;
+        : snapshot.tacticsFrom;
     try {
       // 입력 기록 순서를 그대로 재생합니다. 복구 중 잘못된 행동을 만나면 임시 모험을 버립니다.
       for (const entry of snapshot.log) {
@@ -436,7 +465,7 @@ export class Adventure {
     return adventure.sceneId === snapshot.scene ? adventure : null;
   }
 
-  /** v1은 문구, v2·v3는 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
+  /** v1은 문구, v2 이상은 choiceId로 행동을 찾습니다. 기록된 d20 값을 0 이상 1 미만 난수로 되돌려 같은 판정을 만듭니다. */
   #replayChoice(entry, legacy) {
     const choice = this.choices.find((choice) =>
       legacy ? choice.label === entry.label : choice.id === entry.choiceId,
@@ -470,18 +499,22 @@ export class Adventure {
     return cursor === rolls.length;
   }
 
-  /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2·v3는 반복 전투를 허용합니다. */
+  /** 지원 버전·출신·장면·기록 배열을 먼저 검사합니다. v1만 길이를 제한하며 v2 이상은 반복 전투를 허용합니다. */
   static #hasValidMetadata(snapshot) {
     return Boolean(
       snapshot &&
-        [1, 2, SAVE_VERSION].includes(snapshot.version) &&
+        [1, 2, 3, SAVE_VERSION].includes(snapshot.version) &&
         Object.hasOwn(ORIGINS, snapshot.origin) &&
         Object.hasOwn(SCENES, snapshot.scene) &&
         Array.isArray(snapshot.log) &&
-        (snapshot.version !== SAVE_VERSION ||
+        (snapshot.version < 3 ||
           (Number.isSafeInteger(snapshot.debuffsFrom) &&
             snapshot.debuffsFrom >= 0 &&
             snapshot.debuffsFrom <= snapshot.log.length)) &&
+        (snapshot.version < SAVE_VERSION ||
+          (Number.isSafeInteger(snapshot.tacticsFrom) &&
+            snapshot.tacticsFrom >= 0 &&
+            snapshot.tacticsFrom <= snapshot.log.length)) &&
         (snapshot.version !== 1 || snapshot.log.length <= 20),
     );
   }

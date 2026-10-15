@@ -11,3 +11,4 @@ export { CombatSession } from "./domain/combat-session.mjs";
 export { ExperiencePolicy } from "./domain/experience-policy.mjs";
 export { CampaignResolution } from "./domain/campaign-resolution.mjs";
 export { StatusEffects } from "./domain/status-effects.mjs";
+export { TacticalSession } from "./domain/tactical-session.mjs";

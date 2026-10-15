@@ -3,7 +3,6 @@
  * 행동 버튼을 누르면 콜백을 통해 Adventure의 전투 처리로 연결합니다.
  */
 
-import { COMBAT_ACTIONS } from "../data/monsters.mjs";
 import { createElement, getElement } from "./dom.mjs";
 
 export class CombatView {
@@ -39,7 +38,8 @@ export class CombatView {
       ),
       heading,
     );
-    if (adventure.isInCombat) this.#renderBattle(battle, adventure.character);
+    if (adventure.isInCombat)
+      this.#renderBattle(battle, adventure.character, adventure.combatActions);
     else this.#renderOutcome(battle);
   }
 
@@ -51,12 +51,12 @@ export class CombatView {
   }
 
   /** 적·플레이어 기력, 고정 보상과 행동 버튼을 표시합니다. 치료가 소진되었거나 기력이 가득 차면 치료 버튼을 잠급니다. */
-  #renderBattle(battle, character) {
+  #renderBattle(battle, character, availableActions) {
     this.#panel.append(
       createElement("p", battle.monster.description, "combat-description"),
       createElement(
         "p",
-        `적 기력 ${battle.enemyHealth} / ${battle.monster.health} · 방어 ${battle.monster.defense} · 나의 기력 ${character.health} / ${character.maxHealth}`,
+        `적 기력 ${battle.enemyHealth} / ${battle.monster.health} · 방어 ${battle.tactics?.enemyDefense ?? battle.monster.defense} · 나의 기력 ${character.health} / ${character.maxHealth}`,
         "combat-health",
       ),
       createElement(
@@ -72,6 +72,35 @@ export class CombatView {
         "combat-modifiers",
       ),
     );
+    if (battle.tactics) {
+      const intent = battle.tactics.intent;
+      const warning = createElement(
+        "div",
+        undefined,
+        `enemy-intent intent-${intent.kind}`,
+      );
+      warning.append(
+        createElement("p", "이번 적의 행동", "eyebrow"),
+        createElement("h4", intent.name),
+        createElement("p", intent.detail),
+      );
+      if (["strike", "heavy", "hex"].includes(intent.kind))
+        warning.append(
+          createElement(
+            "p",
+            `명중 시 ${Math.max(1, battle.monster.damage + intent.damageBonus)} 피해 · 자연 20은 추가 2 피해`,
+            "intent-damage",
+          ),
+        );
+      this.#panel.append(warning);
+    } else
+      this.#panel.append(
+        createElement(
+          "p",
+          "이전에 시작한 전투는 기존 규칙으로 이어집니다. 다음 전투부터 행동 예고와 전용 기술을 사용할 수 있습니다.",
+          "combat-modifiers",
+        ),
+      );
     const meter = createElement("progress");
     meter.max = battle.monster.health;
     meter.value = battle.enemyHealth;
@@ -80,28 +109,36 @@ export class CombatView {
     // 전투 화면은 최근 두 턴만 보여 길이를 제한합니다. 전체 이력은 기록서에서 확인할 수 있습니다.
     this.#renderTurns(battle.turns.slice(-2));
     const actions = createElement("div", undefined, "combat-actions");
-    for (const [actionId, action] of Object.entries(COMBAT_ACTIONS)) {
+    const supplies = createElement("details", undefined, "combat-supplies");
+    supplies.append(
+      createElement("summary", "상태별 치료 도구 · 전투마다 각 1개"),
+    );
+    const supplyButtons = createElement("div", undefined, "combat-actions");
+    for (const action of availableActions) {
       const button = createElement("button", undefined, "combat-action");
-      button.dataset.combatAction = actionId;
+      button.dataset.combatAction = action.id;
       button.append(
         createElement("strong", action.name),
         createElement(
           "span",
-          actionId === "recover"
+          action.id === "recover" && !battle.tactics
             ? `${action.detail} · 남은 ${battle.remedies}회`
             : action.detail,
         ),
       );
-      // 화면에서도 불가능하거나 불필요한 치료를 잠급니다. 소진 여부는 도메인에서도 별도로 검사합니다.
-      button.disabled =
-        actionId === "recover" &&
-        (battle.remedies === 0 ||
-          (character.health === character.maxHealth &&
-            character.statuses.length === 0));
-      button.addEventListener("click", () => this.#onAction(actionId));
-      actions.append(button);
+      button.disabled = action.disabled;
+      if (action.reason) {
+        button.title = action.reason;
+        button.append(createElement("small", action.reason));
+      }
+      button.addEventListener("click", () => this.#onAction(action.id));
+      (action.id.startsWith("treat-") ? supplyButtons : actions).append(button);
     }
     this.#panel.append(actions);
+    if (supplyButtons.childElementCount) {
+      supplies.append(supplyButtons);
+      this.#panel.append(supplies);
+    }
   }
 
   /** 승패·실제 획득 경험치를 표시하고 이전 레벨보다 올랐으면 성장 안내를 덧붙입니다. */

@@ -38,6 +38,9 @@ class GameApplication {
       onCombatAction: (actionId) => this.#combatAction(actionId),
       onBackupSave: () => this.#backupSave(),
       onImportSave: (raw) => this.#prepareImport(raw),
+      onOpenSlots: () => this.#openSlots(),
+      onSaveSlot: (slot) => this.#saveSlot(slot),
+      onLoadSlot: (slot) => this.#loadSlot(slot),
     });
   }
 
@@ -126,6 +129,60 @@ class GameApplication {
       this.#gameView.resetJournal();
       this.#saveAndRender({ focusScene: true });
     });
+  }
+
+  /** 자동 저장과 분리한 슬롯 목록을 열고, 저장 권한이 없으면 원인을 알립니다. */
+  #openSlots() {
+    this.#gameView.showSlots(this.#saveRepository.listSlots());
+  }
+
+  /** 빈 슬롯 저장도 확인하고, 덮어쓰기는 현재 슬롯의 장면을 함께 보여줍니다. */
+  #saveSlot(slot) {
+    const info = this.#saveRepository
+      .listSlots()
+      .find((entry) => entry.slot === slot);
+    if (!info || info.unavailable) {
+      this.#gameView.showSlotMessage(
+        "이 브라우저에서는 저장소에 접근할 수 없습니다. 진행 백업을 이용하세요.",
+      );
+      return;
+    }
+    this.#gameView.confirmSlotAction(
+      `슬롯 ${slot}에 저장할까요?`,
+      info.exists
+        ? `기존 기록(${info.title ?? "손상된 기록"})을 현재 여정으로 교체합니다.`
+        : `${this.#adventure.scene.title}의 현재 진행을 저장합니다.`,
+      () => {
+        const saved = this.#saveRepository.saveSlot(slot, this.#adventure);
+        this.#gameView.showSlots(this.#saveRepository.listSlots());
+        this.#gameView.showSlotMessage(
+          saved
+            ? `슬롯 ${slot}에 저장했습니다. 자동 저장과 별도로 보존됩니다.`
+            : "슬롯 저장에 실패했습니다. 기존 기록은 지우지 않았습니다. 진행 백업을 이용하세요.",
+        );
+      },
+    );
+  }
+
+  /** 확인 전에는 현재 진행을 유지합니다. 다시 검증한 기록만 자동 저장과 화면에 적용합니다. */
+  #loadSlot(slot) {
+    const restored = this.#saveRepository.loadSlot(slot);
+    if (!restored) {
+      this.#gameView.showSlotMessage(
+        "불러올 수 없는 기록입니다. 현재 여정은 그대로 유지했습니다.",
+      );
+      return;
+    }
+    this.#gameView.confirmSlotAction(
+      `슬롯 ${slot}을 불러올까요?`,
+      `${restored.character.origin.name} · Lv.${restored.character.level} · ${restored.scene.title}. 현재 진행이 이 기록으로 교체됩니다.`,
+      () => {
+        this.#adventure = restored;
+        this.#gameView.closeSlots();
+        this.#gameView.resetJournal();
+        this.#saveAndRender({ focusScene: true });
+      },
+    );
   }
 
   /** 게임 변경 뒤의 공통 순서입니다. 저장 성공 여부도 화면에 전달하도록 저장을 먼저 시도합니다. */

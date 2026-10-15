@@ -3,6 +3,7 @@
  * 버튼은 콜백으로 GameApplication에 의도를 알리고, 게임 상태를 직접 바꾸지 않습니다.
  */
 
+import { ORIGIN_SKILLS } from "../data/tactics.mjs";
 import { ORIGINS, STAT_NAMES } from "../data/origins.mjs";
 import { CharacterView } from "./character-view.mjs";
 import { StoryView } from "./story-view.mjs";
@@ -21,6 +22,8 @@ export class GameView {
   #pendingEncounter = null;
   // 파일 내용이 검증되어도 확인 전에는 현재 진행을 교체하지 않습니다.
   #pendingSaveImport = null;
+  // 슬롯 확인이 취소되면 이 콜백도 폐기합니다.
+  #pendingSlotAction = null;
   // HTML dialog 요소를 한곳에서 참조합니다. showModal은 배경 조작을 잠급니다.
   #dialogs = {
     origin: getElement("origin-dialog"),
@@ -28,6 +31,8 @@ export class GameView {
     restart: getElement("restart-dialog"),
     encounter: getElement("encounter-dialog"),
     saveImport: getElement("save-import-dialog"),
+    slots: getElement("save-slots-dialog"),
+    slotConfirm: getElement("slot-confirm-dialog"),
   };
 
   /** 컨트롤러 콜백을 각 화면과 버튼에 연결합니다. 각 하위 View는 자신의 DOM 영역만 갱신합니다. */
@@ -40,6 +45,9 @@ export class GameView {
     onCombatAction,
     onBackupSave,
     onImportSave,
+    onOpenSlots,
+    onSaveSlot,
+    onLoadSlot,
   }) {
     this.#storyView = new StoryView(onChoose);
     this.#combatView = new CombatView(onCombatAction);
@@ -49,6 +57,7 @@ export class GameView {
     getElement("continue-journey").addEventListener("click", onContinue);
     this.#bindEncounterDialog();
     this.#bindSaveControls(onBackupSave, onImportSave);
+    this.#bindSlots(onOpenSlots, onSaveSlot, onLoadSlot);
   }
 
   /** 모든 패널을 같은 모험 상태로 갱신하고 저장 상태를 표시합니다. 전투 중에는 전투 제목으로 초점을 옮깁니다. */
@@ -124,6 +133,94 @@ export class GameView {
     downloadText(json, "잿빛-서약-진행.json", "application/json;charset=utf-8");
   }
 
+  // 슬롯 버튼은 한 번만 위임하여 목록 갱신 때 이벤트가 중복되지 않게 합니다.
+  #bindSlots(onOpen, onSave, onLoad) {
+    getElement("manage-slots").addEventListener("click", onOpen);
+    getElement("save-slots-list").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-slot]");
+      if (!button || button.disabled) return;
+      (button.dataset.slotAction === "save" ? onSave : onLoad)(
+        Number(button.dataset.slot),
+      );
+    });
+    getElement("cancel-slot-action").addEventListener("click", () => {
+      this.#pendingSlotAction = null;
+      this.#dialogs.slotConfirm.close();
+    });
+    this.#dialogs.slotConfirm.addEventListener("cancel", () => {
+      this.#pendingSlotAction = null;
+    });
+    getElement("confirm-slot-action").addEventListener("click", () => {
+      const apply = this.#pendingSlotAction;
+      this.#pendingSlotAction = null;
+      this.#dialogs.slotConfirm.close();
+      apply?.();
+    });
+  }
+
+  /** 빈 슬롯과 손상·권한 오류를 구분하며, 불러올 수 없는 기록의 버튼은 잠급니다. */
+  showSlots(slots) {
+    const list = getElement("save-slots-list");
+    list.replaceChildren();
+    for (const info of slots) {
+      const card = createElement("section", undefined, "save-slot");
+      card.append(createElement("h3", `슬롯 ${info.slot}`));
+      const date = info.savedAt
+        ? new Intl.DateTimeFormat("ko-KR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(new Date(info.savedAt))
+        : "";
+      card.append(
+        createElement(
+          "p",
+          info.unavailable
+            ? "저장소 접근 불가 · JSON 진행 백업을 이용하세요."
+            : !info.exists
+              ? "비어 있는 기록"
+              : !info.valid
+                ? "읽을 수 없는 기록 · 덮어쓰기 전까지 보존합니다."
+                : `${info.origin} · Lv.${info.level} · ${info.title}${info.inCombat ? " · 전투 중" : ""}${date ? ` · ${date}` : ""}`,
+        ),
+      );
+      const actions = createElement("div", undefined, "dialog-actions");
+      for (const [action, label] of [
+        ["save", "여기에 저장"],
+        ["load", "불러오기"],
+      ]) {
+        const button = createElement(
+          "button",
+          label,
+          action === "save" ? "primary" : "quiet",
+        );
+        button.dataset.slot = String(info.slot);
+        button.dataset.slotAction = action;
+        button.disabled = Boolean(
+          info.unavailable || (action === "load" && !info.valid),
+        );
+        actions.append(button);
+      }
+      card.append(actions);
+      list.append(card);
+    }
+    getElement("slots-message").textContent = "";
+    if (!this.#dialogs.slots.open) this.#dialogs.slots.showModal();
+  }
+  /** 현재 슬롯 오류·성공만 안내하며 모험 데이터는 바꾸지 않습니다. */
+  showSlotMessage(message) {
+    getElement("slots-message").textContent = message;
+  }
+  closeSlots() {
+    this.#dialogs.slots.close();
+  }
+  /** 덮어쓰기와 진행 교체를 같은 확인창에서 안전하게 처리합니다. */
+  confirmSlotAction(title, description, onConfirm) {
+    this.#pendingSlotAction = onConfirm;
+    getElement("slot-confirm-title").textContent = title;
+    getElement("slot-confirm-description").textContent = description;
+    this.#dialogs.slotConfirm.showModal();
+  }
+
   /** 실제 전투는 시작하지 않고 경고·보상을 표시합니다. onConfirm은 확인 버튼을 눌러야 실행됩니다. */
   confirmEncounter(preview, onConfirm) {
     this.#pendingEncounter = onConfirm;
@@ -197,6 +294,11 @@ export class GameView {
       button.append(
         createElement("strong", `${origin.icon} ${origin.name}`),
         createElement("p", origin.text),
+        createElement(
+          "p",
+          `전용 기술 · ${ORIGIN_SKILLS[originId].name}: ${ORIGIN_SKILLS[originId].detail}`,
+          "origin-skill",
+        ),
         createElement("small", stats),
       );
       button.addEventListener("click", () => {

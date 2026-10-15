@@ -59,6 +59,14 @@ export class StatusEffects {
     return first;
   }
 
+  /** 전용 치료는 지정한 효과만 해제합니다. 없는 효과를 치료해 자원을 낭비하지 않습니다. */
+  relieve(id) {
+    const effect = this.active.find((entry) => entry.id === id);
+    if (!effect) return null;
+    this.#remaining.delete(id);
+    return effect;
+  }
+
   /** 거점 휴식과 막 사이 안전한 여행에서 모든 상태를 해제합니다. */
   clear() {
     this.#remaining.clear();

@@ -1,6 +1,6 @@
 /**
  * @file 상태 이상의 이름·세계관 설명·고정 수치입니다. 같은 효과는 강도가 중첩되지 않습니다.
- * duration은 이후 이야기 판정 또는 공격·응급 처치의 횟수입니다. 이동·후퇴는 소모하지 않습니다.
+ * duration은 이후 이야기 판정 또는 후퇴를 제외한 전투 행동의 횟수입니다. 이동·후퇴는 소모하지 않습니다.
  */
 export const STATUS_EFFECTS = Object.freeze({
   wound: Object.freeze({

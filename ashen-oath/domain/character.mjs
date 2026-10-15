@@ -117,6 +117,10 @@ export class Character {
   relieveStatus() {
     return this.#statusEffects.relieveOne();
   }
+  /** 전용 도구로 한 종류의 효과만 치료합니다. */
+  treatStatus(id) {
+    return this.#statusEffects.relieve(id);
+  }
   /** 전투 명중은 성장 능력치 중 최고값에 기억 혼탁의 감소량을 적용합니다. */
   get attackBonus() {
     return (

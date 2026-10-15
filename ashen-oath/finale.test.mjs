@@ -40,7 +40,8 @@ test("변경 전 v2 저장은 높은 누적 경험치와 전투 중 수치까지
     assert.ok(game);
     assert.deepEqual(game.toSnapshot(), {
       ...original,
-      version: 3,
+      version: 4,
+      tacticsFrom: original.log.length,
       debuffsFrom: original.log.length,
       statuses: [],
     });
@@ -209,7 +210,8 @@ test("최종 전투 도중 저장을 복구하고 복제본과 새 주사위를 
   const restored = Adventure.fromSnapshot(snapshot, new SkillCheck(() => 0));
   assert.deepEqual(restored.toSnapshot(), snapshot);
   restored.performCombatAction("attack");
-  assert.deepEqual(restored.combat.turns.at(-1).rolls, [1, 1]);
+  // 두 번째 행동은 힘 모으기이므로 적의 주사위 없이 새 플레이어 주사위만 소비합니다.
+  assert.deepEqual(restored.combat.turns.at(-1).rolls, [1]);
   assert.deepEqual(run.game.toSnapshot(), snapshot);
 });
 

@@ -1367,3 +1367,135 @@ dialog > p:not(.eyebrow) {
     margin-top: 14px;
   }
 }
+
+/* 새 일러스트는 원본 비율을 유지하며 카드에 맞춥니다. 미로딩 시 SVG가 남습니다. */
+.scene-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+}
+.scene-art[data-art-loaded="true"] .scene-image {
+  opacity: 1;
+}
+.scene-art[data-art-loaded="true"] svg {
+  visibility: hidden;
+}
+.scene-art::after {
+  pointer-events: none;
+}
+.art-caption {
+  z-index: 2;
+  text-shadow: 0 2px 5px #000;
+}
+.story-brief {
+  border-left: 2px solid var(--gold);
+  background: #202b21;
+  padding: 15px 18px;
+  margin: 20px 0 28px;
+}
+.story-brief .eyebrow {
+  margin: 0 0 6px;
+}
+.story-brief h3 {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.8;
+  color: #e0d7b7;
+  margin: 0;
+}
+.story-brief > p:not(.eyebrow),
+.story-brief details {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #abb5a5;
+}
+.story-brief details {
+  margin-top: 10px;
+}
+.story-brief summary {
+  cursor: pointer;
+  color: var(--gold);
+}
+.enemy-intent {
+  border: 1px solid #68745b;
+  background: #202c24;
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.enemy-intent .eyebrow {
+  margin: 0 0 5px;
+}
+.enemy-intent h4 {
+  font-size: 19px;
+  color: #dfd5b3;
+  margin: 0 0 7px;
+  font-weight: 400;
+}
+.enemy-intent > p:last-child {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.intent-heavy,
+.intent-hex {
+  border-color: #b78965;
+  background: #33271f;
+}
+.combat-action small {
+  display: block;
+  color: #c2b39c;
+  font-size: 10px;
+  margin-top: 6px;
+}
+.combat-supplies {
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--gold);
+}
+.combat-supplies summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.combat-supplies .combat-actions {
+  margin-top: 10px;
+}
+.save-slot {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.save-slot h3 {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+.save-slot p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 10px;
+}
+.save-slot .dialog-actions {
+  margin-top: 0;
+}
+#save-slots-dialog {
+  width: min(620px, calc(100vw - 32px));
+}
+#slots-message {
+  font-size: 12px;
+  color: #dacaa5;
+}
+@media (max-width: 620px) {
+  .story-brief {
+    padding: 12px 14px;
+  }
+  .story-brief h3 {
+    font-size: 13px;
+  }
+  .enemy-intent {
+    padding: 13px;
+  }
+}

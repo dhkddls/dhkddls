@@ -224,7 +224,13 @@ test("조작된 경험치·적 기력·보상은 무시하고 잘못된 전투 �
 test("응급 처치는 두 번으로 제한하고 소진된 행동은 턴을 소비하지 않는다", () => {
   const run = journey();
   run.game.choose("first-wolf");
+  run.setRolls([1, 20]);
+  run.game.performCombatAction("attack");
   for (let i = 0; i < 2; i++) {
+    if (i > 0) {
+      run.setRolls([20]);
+      run.game.performCombatAction("guard");
+    }
     run.setRolls([1]);
     run.game.performCombatAction("recover");
   }

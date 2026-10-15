@@ -3,6 +3,8 @@
  * DOM의 id는 index.html과 연결되는 약속이며, 선택의 유효성은 Adventure가 판단합니다.
  */
 
+import { ACT_ART } from "../data/art.mjs";
+import { STORY_PEOPLE } from "../data/story-revision.mjs";
 import { STAT_NAMES } from "../data/origins.mjs";
 import { ACT_PRESENTATION } from "../data/campaign.mjs";
 import { FAILURE_STATUSES, STATUS_EFFECTS } from "../data/status-effects.mjs";
@@ -25,7 +27,15 @@ export class StoryView {
     getElement("act-label").textContent = act.label;
     getElement("footer-chapter").textContent = act.footer;
     getElement("scene-art").dataset.act = String(adventure.actNumber);
-    getElement("scene-art").setAttribute("aria-label", act.art);
+    this.#renderArt(adventure);
+    getElement("story-objective").textContent =
+      scene.objective ?? "다음 행동을 선택하기";
+    getElement("story-recap").textContent =
+      scene.recap ?? "당신의 선택으로 여정을 이어갑니다.";
+    getElement("story-people").textContent =
+      adventure.actNumber === 2 && !adventure.hasVisited("foundry-truth")
+        ? "세른: 길잡이 · 에다: 종 도면을 준 종지기 · 조합 수레꾼들: 빼앗긴 기억을 되찾으려는 사람들"
+        : STORY_PEOPLE[adventure.actNumber];
     getElement("chapter").textContent = scene.chapter;
     getElement("scene-number").textContent =
       `${String(adventure.choiceCount + 1).padStart(2, "0")} / ${act.numeral}`;
@@ -45,6 +55,23 @@ export class StoryView {
     this.#renderProse(adventure);
     this.#renderCheck(adventure.lastCheck);
     this.#renderChoices(adventure);
+  }
+
+  /** 웹과 다운로드판에서 같은 이미지를 씁니다. 로드 실패 시 기존 SVG를 유지합니다. */
+  #renderArt(adventure) {
+    const art = ACT_ART[adventure.isFinished ? 1 : adventure.actNumber];
+    const container = getElement("scene-art");
+    const img = getElement("scene-image");
+    container.setAttribute("aria-label", art.alt);
+    if (img.getAttribute("src") === art.src) return;
+    container.dataset.artLoaded = "false";
+    img.onload = () => {
+      container.dataset.artLoaded = "true";
+    };
+    img.onerror = () => {
+      container.dataset.artLoaded = "false";
+    };
+    img.src = art.src;
   }
 
   /** 실제 플레이의 첫·마지막 서약, 전투 승리와 증거 수집량을 완결 화면에 남깁니다. */

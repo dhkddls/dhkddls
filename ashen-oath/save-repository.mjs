@@ -5,7 +5,7 @@
 
 import { Adventure } from "./engine.mjs";
 
-// 저장 형식이 v3가 되어도 기존 기록을 찾도록 브라우저 저장 키의 이름은 유지합니다.
+// 저장 형식이 v4가 되어도 기존 기록을 찾도록 브라우저 저장 키의 이름은 유지합니다.
 const SAVE_KEY = "ashen-oath.v1";
 
 /** 저장소 접근 실패를 처리해 저장 기능 없이도 플레이를 이어갑니다. */
@@ -53,6 +53,86 @@ export class SaveRepository {
       this.#available = false;
     }
     return this.#available;
+  }
+
+  /** 고정된 세 슬롯만 허용합니다. 자동 저장 키와 절대로 겹치지 않습니다. */
+  #slotKey(slot) {
+    if (![1, 2, 3].includes(slot)) throw new Error("저장 슬롯은 1~3입니다.");
+    return `ashen-oath.slot.${slot}`;
+  }
+
+  /** 현재 위치·전투·상태까지 저장합니다. 슬롯 실패로 자동 저장을 삭제하지 않습니다. */
+  saveSlot(slot, adventure) {
+    try {
+      this.#storageProvider().setItem(
+        this.#slotKey(slot),
+        JSON.stringify({
+          savedAt: new Date().toISOString(),
+          snapshot: adventure.toSnapshot(),
+        }),
+      );
+      this.#available = true;
+      return true;
+    } catch {
+      this.#available = false;
+      return false;
+    }
+  }
+
+  /** 슬롯을 검증해 불러옵니다. 손상된 기록도 자동으로 삭제하지 않습니다. */
+  loadSlot(slot) {
+    try {
+      const saved = JSON.parse(
+        this.#storageProvider().getItem(this.#slotKey(slot)),
+      );
+      const game = Adventure.fromSnapshot(saved?.snapshot);
+      this.#available = true;
+      return game;
+    } catch {
+      return null;
+    }
+  }
+
+  /** 정보는 검증된 모험에서 읽습니다. 파일 속 임의 제목을 HTML에 넣지 않습니다. */
+  listSlots() {
+    try {
+      const storage = this.#storageProvider();
+      const slots = [1, 2, 3].map((slot) => {
+        const raw = storage.getItem(this.#slotKey(slot));
+        if (!raw) return { slot, exists: false, valid: false };
+        try {
+          const saved = JSON.parse(raw);
+          const game = Adventure.fromSnapshot(saved.snapshot);
+          if (!game) throw new Error("손상된 기록");
+          return {
+            slot,
+            exists: true,
+            valid: true,
+            title: game.scene.title,
+            origin: game.character.origin.name,
+            level: game.character.level,
+            inCombat: game.isInCombat,
+            savedAt:
+              typeof saved.savedAt === "string" &&
+              !Number.isNaN(Date.parse(saved.savedAt))
+                ? saved.savedAt
+                : null,
+          };
+        } catch {
+          return { slot, exists: true, valid: false };
+        }
+      });
+      this.#available = true;
+      return slots;
+    } catch {
+      this.#available = false;
+      return [1, 2, 3].map((slot) => ({
+        slot,
+        exists: false,
+        valid: false,
+        unavailable: true,
+      }));
+    }
   }
 
   /** JSON 문법 오류와 게임 기록 오류를 null로 통일합니다. 유효한 JSON이어도 가능한 진행인지는 Adventure가 검사합니다. */

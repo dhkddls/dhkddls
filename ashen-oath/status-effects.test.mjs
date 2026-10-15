@@ -216,7 +216,7 @@ test("후퇴와 거절된 행동은 기간을 소모하지 않으며 막 사이�
   assert.deepEqual(g.character.statuses, []);
 });
 
-test("이전 실패에는 소급하지 않고 v3로 저장한 뒤에도 새 행동의 효과만 정확히 재생한다", () => {
+test("이전 실패에는 소급하지 않고 새 버전으로 저장한 뒤에도 새 행동의 효과만 정확히 재생한다", () => {
   const old = oldSave("v2-failed-check");
   const g = Adventure.fromSnapshot(old, dice(1));
   assert.deepEqual(g.character.statuses, []);

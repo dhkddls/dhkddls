@@ -4,6 +4,7 @@
  * 빌드 때만 Node.js·npm·네트워크가 필요하며, 생성된 파일은 서버 없이 실행됩니다.
  */
 
+import { ACT_ART } from "./data/art.mjs";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,11 +62,16 @@ if (!template.includes(stylesheetTag) || !template.includes(scriptTag)) {
 
 // 문자열 속 닫기 태그가 HTML의 실제 script 끝으로 해석되지 않도록 보호합니다.
 const embeddedScript = javascript.replace(/<\/script/gi, "<\\/script");
-const html = template
+let html = template
   .replace(stylesheetTag, () => `<style>\n${stylesheet}\n</style>`)
   .replace(scriptTag, () => `<script>\n${embeddedScript}\n</script>`)
   // 파일을 다른 이름으로 저장해도 로고 클릭이 폴더가 아닌 현재 파일을 다시 열게 합니다.
   .replace('<a class="brand" href="./"', '<a class="brand" href=""');
 
+// 원본 웹사이트는 WebP 파일을 읽고, 다운로드판은 같은 파일을 내장하여 오프라인에서도 표시합니다.
+for (const art of Object.values(ACT_ART)) {
+  const uri = `data:image/webp;base64,${readFileSync(join(directory, art.src)).toString("base64")}`;
+  html = html.replaceAll(art.src, uri);
+}
 writeFileSync(outputPath, `${generatedMarker}\n${html}`, "utf8");
 console.log(`단일 실행 파일 생성: ${outputPath}`);

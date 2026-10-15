@@ -1,0 +1,181 @@
+{
+  "version": 3,
+  "debuffsFrom": 0,
+  "statuses": [
+    {
+      "id": "dread",
+      "name": "메아리 공포",
+      "stat": "spirit",
+      "statPenalty": 2,
+      "defensePenalty": 2,
+      "duration": 3,
+      "effect": "의지 판정 −2 · 방어 −2",
+      "lore": "붙잡지 못한 목소리와 빗나간 칼끝이 떠올라 다음 공격에 몸이 굳는다.",
+      "remaining": 3
+    }
+  ],
+  "origin": "warden",
+  "scene": "waystation",
+  "hp": 10,
+  "level": 1,
+  "experience": 0,
+  "clues": [
+    "원래의 봉인문",
+    "되찾은 기억"
+  ],
+  "items": [
+    "금이 간 기사 인장",
+    "나루터의 등불"
+  ],
+  "visited": [
+    "arrival",
+    "inn",
+    "archive",
+    "crossroads",
+    "crypt",
+    "heart",
+    "ending-seal",
+    "road-oath",
+    "waystation"
+  ],
+  "log": [
+    {
+      "kind": "choice",
+      "choiceId": "lantern",
+      "scene": "arrival",
+      "label": "등불을 받아 들고 마을로 향한다",
+      "result": null
+    },
+    {
+      "kind": "choice",
+      "choiceId": "archive",
+      "scene": "inn",
+      "label": "닫힌 서고에서 옛 명부를 찾는다",
+      "result": null
+    },
+    {
+      "kind": "choice",
+      "choiceId": "blueprint",
+      "scene": "archive",
+      "label": "도면과 최근 명부를 대조한다",
+      "result": {
+        "roll": 20,
+        "bonus": 1,
+        "dc": 12,
+        "stat": "wit",
+        "success": true,
+        "text": "도면의 주석을 찾았다. 「종은 그릇, 공동의 증언은 마개」. 잊힌 사람을 함께 기억하면 새 은종 없이도 봉인을 되살릴 수 있다."
+      }
+    },
+    {
+      "kind": "choice",
+      "choiceId": "descend",
+      "scene": "crossroads",
+      "label": "네라와 함께 종 아래로 내려간다",
+      "result": null
+    },
+    {
+      "kind": "choice",
+      "choiceId": "true-name",
+      "scene": "crypt",
+      "label": "네라에게 어머니와의 기억을 말하게 한다",
+      "result": {
+        "roll": 20,
+        "bonus": 2,
+        "dc": 13,
+        "stat": "spirit",
+        "success": true,
+        "text": "“빵 끝은 늘 엄마가 먹었어요.” 거창한 참이름보다 작은 기억이 강했다. 검은 손이 촛농처럼 녹아내린다."
+      }
+    },
+    {
+      "kind": "choice",
+      "choiceId": "restore",
+      "scene": "heart",
+      "label": "마을 사람들과 이름을 불러 봉인을 다시 맺는다",
+      "result": null
+    },
+    {
+      "kind": "continue",
+      "scene": "ending-seal",
+      "label": "중반부로 여정을 이어간다",
+      "result": null
+    },
+    {
+      "kind": "choice",
+      "choiceId": "reach-camp",
+      "scene": "road-oath",
+      "label": "염로 역참에 야영지를 세운다",
+      "result": null
+    },
+    {
+      "kind": "choice",
+      "choiceId": "first-wolf",
+      "scene": "waystation",
+      "label": "갈대 그림자늑대를 몰아낸다",
+      "result": null
+    },
+    {
+      "kind": "combat",
+      "scene": "waystation",
+      "actionId": "attack",
+      "label": "기본 공격",
+      "result": null,
+      "combat": {
+        "actionId": "attack",
+        "label": "기본 공격",
+        "rolls": [
+          1,
+          1
+        ],
+        "lines": [
+          "d20 1 + 4 / 방어 8 · 빗나감, 견제. 적에게 1 피해.",
+          "갈대 그림자늑대: d20 1 + 1 / 방어 10 · 공격을 피했다.",
+          "상태 이상 · 메아리 공포: 의지 판정 −2 · 방어 −2 · 다음 위험 행동 3회. 같은 효과는 강도 대신 기간만 갱신됩니다."
+        ],
+        "status": "ongoing"
+      }
+    }
+  ],
+  "last": null,
+  "combat": {
+    "monster": {
+      "id": "reed-wolf",
+      "name": "갈대 그림자늑대",
+      "level": 1,
+      "health": 10,
+      "defense": 8,
+      "attack": 1,
+      "damage": 2,
+      "experience": 50,
+      "description": "잊힌 사냥개들의 기억이 검은 갈대에 엉겨 붙었다. 부서지면 빈 갈대만 남는다."
+    },
+    "enemyHealth": 9,
+    "round": 1,
+    "remedies": 2,
+    "status": "ongoing",
+    "reward": {
+      "amount": 50,
+      "base": 50,
+      "multiplier": 1,
+      "playerLevel": 1,
+      "monsterLevel": 1
+    },
+    "turns": [
+      {
+        "actionId": "attack",
+        "label": "기본 공격",
+        "rolls": [
+          1,
+          1
+        ],
+        "lines": [
+          "d20 1 + 4 / 방어 8 · 빗나감, 견제. 적에게 1 피해.",
+          "갈대 그림자늑대: d20 1 + 1 / 방어 10 · 공격을 피했다.",
+          "상태 이상 · 메아리 공포: 의지 판정 −2 · 방어 −2 · 다음 위험 행동 3회. 같은 효과는 강도 대신 기간만 갱신됩니다."
+        ]
+      }
+    ]
+  },
+  "lastBattle": null
+}
