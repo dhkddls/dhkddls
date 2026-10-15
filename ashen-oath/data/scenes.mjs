@@ -7,6 +7,7 @@
  */
 
 import { MIDGAME_SCENES } from "./midgame-scenes.mjs";
+import { FINALE_SCENES } from "./finale-scenes.mjs";
 
 // 장면과 선택지 데이터. label은 기존 저장 기록을 복구하는 데에도 사용됩니다.
 export const SCENES = {
@@ -377,4 +378,5 @@ export const SCENES = {
   },
   // 중반 장면을 같은 장면 사전에 합쳐 next ID로 두 막을 조회할 수 있게 합니다.
   ...MIDGAME_SCENES,
+  ...FINALE_SCENES,
 };

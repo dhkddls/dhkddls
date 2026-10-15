@@ -16,9 +16,13 @@ export function createElement(tag, text, className) {
   return element;
 }
 
-// 문자열을 UTF-8 Markdown Blob으로 만들고 임시 링크를 클릭해 파일로 내려받습니다.
-export function downloadText(text, filename) {
-  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+// 문자열을 UTF-8 문서로 내려받습니다. 기본은 Markdown이고 진행 백업은 JSON MIME을 지정합니다.
+export function downloadText(
+  text,
+  filename,
+  mimeType = "text/markdown;charset=utf-8",
+) {
+  const blob = new Blob([text], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = createElement("a");
   link.href = url;

@@ -19,12 +19,15 @@ export class GameView {
   #combatView;
   // 경고 확인을 기다리는 전투 시작 함수. 취소·실행 후 비워 오래된 요청이 남지 않게 합니다.
   #pendingEncounter = null;
+  // 파일 내용이 검증되어도 확인 전에는 현재 진행을 교체하지 않습니다.
+  #pendingSaveImport = null;
   // HTML dialog 요소를 한곳에서 참조합니다. showModal은 배경 조작을 잠급니다.
   #dialogs = {
     origin: getElement("origin-dialog"),
     help: getElement("help-dialog"),
     restart: getElement("restart-dialog"),
     encounter: getElement("encounter-dialog"),
+    saveImport: getElement("save-import-dialog"),
   };
 
   /** 컨트롤러 콜백을 각 화면과 버튼에 연결합니다. 각 하위 View는 자신의 DOM 영역만 갱신합니다. */
@@ -35,6 +38,8 @@ export class GameView {
     onExport,
     onContinue,
     onCombatAction,
+    onBackupSave,
+    onImportSave,
   }) {
     this.#storyView = new StoryView(onChoose);
     this.#combatView = new CombatView(onCombatAction);
@@ -43,10 +48,12 @@ export class GameView {
     getElement("export").addEventListener("click", onExport);
     getElement("continue-journey").addEventListener("click", onContinue);
     this.#bindEncounterDialog();
+    this.#bindSaveControls(onBackupSave, onImportSave);
   }
 
   /** 모든 패널을 같은 모험 상태로 갱신하고 저장 상태를 표시합니다. 전투 중에는 전투 제목으로 초점을 옮깁니다. */
   render(adventure, storageAvailable, { focusScene = false } = {}) {
+    getElement("save-message").hidden = true;
     this.#characterView.render(adventure);
     this.#storyView.render(adventure);
     this.#journalView.render(adventure);
@@ -59,6 +66,62 @@ export class GameView {
         this.#combatView.focus();
       else this.#storyView.scrollToScene();
     }
+  }
+
+  /** 큰 파일과 읽기 실패를 처리합니다. JSON과 게임 기록의 검증은 컨트롤러에 위임합니다. */
+  #bindSaveControls(onBackupSave, onImportSave) {
+    const input = getElement("save-file");
+    getElement("backup-save").addEventListener("click", onBackupSave);
+    getElement("load-save").addEventListener("click", () => input.click());
+    input.addEventListener("change", async () => {
+      const file = input.files[0];
+      input.value = "";
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        this.showSaveError("진행 파일은 5MB 이하의 JSON이어야 합니다.");
+        return;
+      }
+      try {
+        onImportSave(await file.text());
+      } catch {
+        this.showSaveError(
+          "파일을 읽을 수 없습니다. 현재 모험은 그대로 유지했습니다.",
+        );
+      }
+    });
+    getElement("cancel-import").addEventListener("click", () => {
+      this.#pendingSaveImport = null;
+      this.#dialogs.saveImport.close();
+    });
+    this.#dialogs.saveImport.addEventListener("cancel", () => {
+      this.#pendingSaveImport = null;
+    });
+    getElement("confirm-import").addEventListener("click", () => {
+      const confirm = this.#pendingSaveImport;
+      this.#pendingSaveImport = null;
+      this.#dialogs.saveImport.close();
+      confirm?.();
+    });
+  }
+
+  /** 검증된 기록의 위치를 보여주고 현재 진행을 덮어쓰기 전에 확인합니다. */
+  confirmSaveImport(adventure, onConfirm) {
+    this.#pendingSaveImport = onConfirm;
+    getElement("import-description").textContent =
+      `${adventure.character.origin.name} · Lv.${adventure.character.level} · ${adventure.scene.title}. 현재 진행이 이 기록으로 교체됩니다.`;
+    this.#dialogs.saveImport.showModal();
+  }
+
+  /** 오류 메시지는 텍스트로만 넣고 현재 화면의 게임 상태를 보존합니다. */
+  showSaveError(message) {
+    const container = getElement("save-message");
+    container.textContent = message;
+    container.hidden = false;
+  }
+
+  /** 기계가 복구할 수 있는 JSON이며, 읽기용 Markdown 기록과 구분합니다. */
+  exportSave(json) {
+    downloadText(json, "잿빛-서약-진행.json", "application/json;charset=utf-8");
   }
 
   /** 실제 전투는 시작하지 않고 경고·보상을 표시합니다. onConfirm은 확인 버튼을 눌러야 실행됩니다. */

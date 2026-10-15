@@ -119,7 +119,8 @@ test("세 출신과 세 초반 결말에서 중반부로 이어지고 보스를 
       run.game.choose("face-keeper");
       winBattle(run, "power");
       assert.equal(run.game.sceneId, "act2-ending");
-      assert.equal(run.game.canContinue, false);
+      assert.equal(run.game.canContinue, true);
+      assert.equal(run.game.isFinished, false);
       assert.ok(run.game.character.experience > 500);
       assert.ok(run.game.clues.includes("주조소 공동 증언"));
       assert.match(

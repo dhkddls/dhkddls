@@ -13,7 +13,7 @@
 
 ### [잿빛 서약 — 종이 울리지 않는 마을](./ashen-oath)
 
-이름과 기억을 둘러싼 중세 판타지 이야기형 TRPG입니다. 세 가지 출신, d20 판정, 장소 조사와 선택에 따른 세 갈래 결말을 즐길 수 있습니다. 이후 염로와 별무덤 주조소에서 턴제 전투를 벌이며 Lv.1~5로 성장하는 중반부로 이어집니다.
+이름과 기억을 둘러싼 중세 판타지 이야기형 TRPG입니다. 세 가지 출신과 d20 판정으로 시작해, 염로·별무덤 주조소·왕도의 진상을 추적하는 완결형 게임입니다. 턴제 전투로 Lv.8까지 성장하고 두 단계 최종 보스를 넘어, 첫 선택과 조사 내용을 반영하는 세 가지 최종 결말을 남깁니다.
 
 - [게임 소개 및 실행 방법](./ashen-oath/README.md)
 - [서버 없이 실행하는 HTML 파일](./ashen-oath/play.html) — 파일 화면에서 **Download raw file**로 다운로드한 뒤 브라우저로 여세요.
@@ -23,4 +23,4 @@
 dhkddls/dhkddls is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 You can click the Preview link to take a look at your changes.
 ---
-print("Hello,Github!") 
+print("Hello,Github!")

@@ -5,25 +5,28 @@
 
 export class ExperiencePolicy {
   // 각 인덱스+1 레벨이 시작되는 누적 경험치. 변경을 막기 위해 배열을 freeze합니다.
-  static LEVEL_THRESHOLDS = Object.freeze([0, 80, 200, 380, 620]);
+  static LEVEL_THRESHOLDS = Object.freeze([
+    0, 80, 200, 380, 620, 950, 1400, 2000,
+  ]);
   // 경계 배열 길이로 최대 레벨을 정해 두 설정이 따로 어긋나지 않게 합니다.
   static MAX_LEVEL = ExperiencePolicy.LEVEL_THRESHOLDS.length;
 
-  /** 누적 경험치가 통과한 경계 수를 세어 Lv.1~5를 구합니다. 마지막 경계 뒤에도 레벨은 5입니다. */
-  static levelFor(totalExperience) {
+  /** 경계와 해당 막의 상한으로 레벨을 계산합니다. 기존 전투의 수치를 보존하려고 상한을 인수로 받습니다. */
+  static levelFor(totalExperience, levelCap = ExperiencePolicy.MAX_LEVEL) {
     let level = 1;
     for (const threshold of ExperiencePolicy.LEVEL_THRESHOLDS.slice(1)) {
-      if (totalExperience < threshold) break;
+      if (totalExperience < threshold || level >= levelCap) break;
       level++;
     }
     return level;
   }
 
   /** 현재 레벨 시작점 이후의 경험치와 다음 레벨까지의 구간 크기를 반환합니다. 최고 레벨은 required=null입니다. */
-  static progress(totalExperience) {
-    const level = ExperiencePolicy.levelFor(totalExperience);
+  static progress(totalExperience, levelCap = ExperiencePolicy.MAX_LEVEL) {
+    const level = ExperiencePolicy.levelFor(totalExperience, levelCap);
     const start = ExperiencePolicy.LEVEL_THRESHOLDS[level - 1];
-    const next = ExperiencePolicy.LEVEL_THRESHOLDS[level] ?? null;
+    const next =
+      level >= levelCap ? null : ExperiencePolicy.LEVEL_THRESHOLDS[level];
     return {
       current: totalExperience - start,
       required: next === null ? null : next - start,

@@ -64,7 +64,10 @@ export class CombatSession {
     this.#round++;
     if (actionId === "flee") {
       this.#status = "escaped";
-      turn.lines.push("교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다.");
+      turn.lines.push(
+        this.#monster.retreatText ??
+          "교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다.",
+      );
     } else {
       this.#playerTurn(actionId, character, dice, turn);
       // 처치한 적은 반격하지 않습니다. 먼저 승리를 판정한 뒤 살아 있는 경우에만 적 차례로 넘어갑니다.
@@ -76,7 +79,8 @@ export class CombatSession {
         if (character.health === 0) {
           this.#status = "defeat";
           turn.lines.push(
-            "동료가 당신을 야영지로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+            this.#monster.defeatText ??
+              "동료가 당신을 야영지로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
           );
         }
       }

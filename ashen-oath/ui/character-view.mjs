@@ -47,7 +47,7 @@ export class CharacterView {
     getElement("player-level").textContent = `Lv.${character.level}`;
     getElement("experience-value").textContent =
       progress.required === null
-        ? `최고 레벨 · 누적 ${character.experience} XP`
+        ? `구간 최고 Lv.${character.levelCap} · ${character.experience} XP`
         : `${progress.current} / ${progress.required} XP`;
     getElement("experience-bar").style.width =
       progress.required === null

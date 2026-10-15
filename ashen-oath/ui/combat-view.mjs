@@ -99,7 +99,7 @@ export class CombatView {
   #renderOutcome(battle) {
     const labels = {
       victory: "승리",
-      defeat: "패배 · 야영지에서 회복하세요",
+      defeat: "패배 · 휴식 후 재도전하세요",
       escaped: "후퇴 완료",
     };
     this.#panel.append(

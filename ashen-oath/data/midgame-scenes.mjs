@@ -188,7 +188,7 @@ export const MIDGAME_SCENES = {
       },
     ],
   },
-  // 현재 구현된 중반부의 끝. 첫 결말과 달리 다음 막으로 계속하는 버튼은 없습니다.
+  // 중반부 종료. continueJourney로 왕도에 진입하면 Lv.8까지 성장할 수 있습니다.
   "act2-ending": {
     chapter: "제2막 완료 · 기억의 운송장",
     title: "왕도로 향하는 증언",

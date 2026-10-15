@@ -1094,7 +1094,67 @@ dialog > p:not(.eyebrow) {
   }
 }
 
-/* 성장과 전투는 기존 기록서 색상과 동일한 팔레트를 사용합니다. */
+/* 최종막은 같은 SVG를 옅은 청색으로 바꾸어 왕도 도착을 구분합니다. */
+.scene-art[data-act="3"] svg {
+  filter: hue-rotate(18deg) saturate(0.7);
+}
+.ending-summary {
+  padding: 20px;
+  border: 1px solid var(--gold);
+  background: #222c20;
+  margin: 20px 0;
+}
+.ending-summary h3 {
+  font: 21px/1.6 var(--serif);
+  font-weight: 400;
+  color: var(--gold);
+  margin-top: 0;
+}
+.ending-statistics {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 12px;
+}
+.ending-statistics dt {
+  color: var(--muted);
+}
+.ending-statistics dd {
+  margin: 0;
+  color: #e0ddc5;
+  overflow-wrap: anywhere;
+}
+.ending-credits {
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.story-footer {
+  flex-wrap: wrap;
+}
+.save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.save-message {
+  color: #dfb898;
+  font-size: 12px;
+  padding: 8px 20px;
+}
+@media (max-width: 620px) {
+  .ending-summary {
+    padding: 14px;
+  }
+  .ending-statistics {
+    grid-template-columns: 90px minmax(0, 1fr);
+    gap: 10px;
+    font-size: 11px;
+  }
+}
 /* 레벨·경험치 영역. 기력 막대와 별도로 성장 진행을 표시합니다. */
 .progression {
   margin-top: 20px;
@@ -1280,8 +1340,8 @@ dialog > p:not(.eyebrow) {
           <h1>잊힌 이름에도<br />이야기는 남는다.</h1>
         </div>
         <p class="intro-copy">
-          한 사람의 여행자, 스무 면의 주사위.<br />당신의 선택으로 쓰는 변경의
-          첫 번째 밤과 그 너머의 여정.
+          한 사람의 여행자, 스무 면의 주사위.<br />서리여울의 첫 밤에서 왕도의
+          마지막 서약까지, 당신의 선택으로.
         </p>
       </section>
       <!-- 큰 화면은 캐릭터·모험·기록서의 세 열, 작은 화면은 CSS 미디어 쿼리로 재배치합니다. -->
@@ -1322,6 +1382,7 @@ dialog > p:not(.eyebrow) {
         <!-- 이야기·판정·전투·선택지를 담는 중앙 영역입니다. -->
         <section class="adventure" aria-label="모험 본문">
           <div
+            id="scene-art"
             class="scene-art"
             role="img"
             aria-label="별 아래 서 있는 서리여울의 종탑과 안개에 잠긴 중세 마을"
@@ -1438,11 +1499,17 @@ dialog > p:not(.eyebrow) {
             ></section>
             <!-- 가능한 선택지만 StoryView가 버튼으로 생성합니다. 실제 허용 여부는 Adventure도 다시 검사합니다. -->
             <div id="choices" class="choices"></div>
-            <!-- 막 종료 때만 표시합니다. 첫 결말은 내보내기와 중반 계속하기, 중반 종료는 내보내기만 가능합니다. -->
+            <!-- 막 종료에는 계속하기, 캠페인 완결에는 결과 요약과 내보내기를 표시합니다. -->
             <div id="ending-tools" hidden>
               <p id="ending-note" class="ending-note">
                 첫 번째 모험이 끝났습니다. 이 선택은 더 큰 이야기의 시작입니다.
               </p>
+              <section
+                id="ending-summary"
+                class="ending-summary"
+                aria-label="게임 완료 요약"
+                hidden
+              ></section>
               <button id="export" class="primary">모험 기록 내려받기 ↓</button>
               <button id="continue-journey" class="primary" hidden>
                 중반부로 떠나기 →
@@ -1451,9 +1518,21 @@ dialog > p:not(.eyebrow) {
           </div>
           <!-- 저장 상태와 다시 시작. 저장 권한이 없어도 게임을 계속할 수 있으며 여기에서 상태를 알립니다. -->
           <footer class="story-footer">
-            <span>✧ <span id="save-status">선택할 때마다 자동 저장</span></span
-            ><button id="restart" class="quiet">처음부터 다시</button>
+            <span>✧ <span id="save-status">선택할 때마다 자동 저장</span></span>
+            <div class="save-actions">
+              <button id="backup-save" class="quiet">진행 백업</button
+              ><button id="load-save" class="quiet">불러오기</button
+              ><button id="restart" class="quiet">처음부터 다시</button>
+            </div>
+            <input
+              id="save-file"
+              type="file"
+              accept=".json,application/json"
+              aria-label="진행 파일 선택"
+              hidden
+            />
           </footer>
+          <p id="save-message" class="save-message" role="alert" hidden></p>
         </section>
         <!-- JournalView 영역. tablist/tab/tabpanel 역할은 키보드와 보조기술이 탭 구조를 이해하도록 합니다. -->
         <aside class="journal-panel">
@@ -1556,9 +1635,19 @@ dialog > p:not(.eyebrow) {
       </p>
       <p>
         공격·결정타·응급 처치·후퇴를 선택할 수 있습니다. 패배와 후퇴는 경험치가
-        없으며, 패배하면 기력 1로 야영지에 돌아옵니다. 야영지의 휴식은 기력을
-        전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대 기력과 능력치가
-        증가합니다.
+        없으며, 패배하면 기력 1로 안전한 거점이나 확보한 통로에 돌아옵니다.
+        휴식은 기력을 전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대
+        기력과 능력치가 증가합니다.
+      </p>
+      <p>
+        중반부를 마치면 왕도에서 Lv.8까지 성장할 수 있습니다. 조사와 두 단계
+        최종 보스를 지나 마지막 서약과 후일담으로 완결됩니다. 보스 사이에도
+        회복하고 훈련할 수 있습니다.
+      </p>
+      <p>
+        「진행 백업」으로 JSON을 내려받고 「불러오기」로 이어갈 수 있습니다.
+        현재 진행을 교체하기 전에 확인하며, 잘못된 파일은 진행을 바꾸지
+        않습니다. Markdown 모험 기록은 읽기용이며 불러올 수 없습니다.
       </p>
     </dialog>
     <!-- 초기화 확인. 취소하면 그대로 두고 확인 버튼만 새 모험을 요청합니다. -->
@@ -1585,6 +1674,19 @@ dialog > p:not(.eyebrow) {
         ><button id="confirm-encounter" class="primary">
           확인하고 전투 시작
         </button>
+      </div>
+    </dialog>
+    <!-- 백업을 읽어도 사용자가 확인해야 현재 진행을 교체합니다. 취소·Esc는 상태를 바꾸지 않습니다. -->
+    <dialog
+      id="save-import-dialog"
+      aria-labelledby="import-title"
+      aria-describedby="import-description"
+    >
+      <h2 id="import-title">저장한 여정을 불러올까요?</h2>
+      <p id="import-description"></p>
+      <div class="dialog-actions">
+        <button id="cancel-import" class="quiet">현재 여정 유지</button
+        ><button id="confirm-import" class="primary">이 기록 불러오기</button>
       </div>
     </dialog>
     <!-- 정적 HTML 요소 뒤에서 실행합니다. ES 모듈은 HTTP 서버로 제공해야 하며 app.mjs가 전체 앱을 시작합니다. -->
@@ -1817,7 +1919,7 @@ dialog > p:not(.eyebrow) {
         }
       ]
     },
-    // 현재 구현된 중반부의 끝. 첫 결말과 달리 다음 막으로 계속하는 버튼은 없습니다.
+    // 중반부 종료. continueJourney로 왕도에 진입하면 Lv.8까지 성장할 수 있습니다.
     "act2-ending": {
       chapter: "제2막 완료 · 기억의 운송장",
       title: "왕도로 향하는 증언",
@@ -1827,6 +1929,381 @@ dialog > p:not(.eyebrow) {
         "문지기가 멈추고 은심이 차갑게 식는다. 용기 속에 있던 것은 부활을 기다리는 영혼이 아니라, 살아 있는 사람들이 빼앗긴 삶의 조각이다. 조합은 용기의 이름과 행선지를 대조해 주인에게 돌려주기로 한다.",
         "제9보관소의 출고 명령과 변경 사람들의 증언이 당신의 배낭에 들어 있다. 마을의 종을 지켰든, 부쉈든, 시간을 샀든 이제 왕도에서 묻고 답할 근거가 생겼다.",
         "세른은 북쪽 사람들을 돕기 위해 남는다. 당신은 염로 서편으로 발길을 돌린다. 다음 이야기는 왕도의 빈 의자와, 기억을 수집하라는 명령을 내린 사람에게로 이어진다."
+      ]
+    }
+  };
+
+  // data/finale-scenes.mjs
+  var FINALE_SCENES = {
+    "capital-gate": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "일곱 성문과 하나의 침묵",
+      place: "엘드라 왕도 · 동문",
+      quote: "“이 도시는 누구를 기억할지, 누가 결정하나요?”",
+      paragraphs: [
+        "왕도까지의 닷새 길 끝에 종 일곱 개가 같은 시각에 울린다. 소리는 웅장하지만 성문 옆 실종 공고에는 얼굴 대신 빈 사각형이 늘어섰다. 변경에서 보았던 번짐이다.",
+        "등불 조합의 소개장을 든 서기관 리안이 당신을 맞는다. 세른은 북쪽에 남았지만 그의 소식과 주조소 사람들의 증언이 먼저 도착했다. 리안은 제9보관소에서 일하다 기록 반출을 거부하고 나온 사람이다.",
+        "“감찰관 칼드 렌은 두 번째 백야를 막는다고 했어요. 그런데 남긴 것은 보호 명령이 아니라, 기억을 가진 사람들의 징발 명령이었죠.” 당신은 증거를 배낭 안쪽에 넣는다. 여기서는 괴물뿐 아니라 기록을 고치는 권력과도 맞서야 한다."
+      ],
+      choices: [
+        {
+          id: "enter-safehouse",
+          label: "리안과 함께 등불 조합의 은신처로 간다",
+          detail: "왕도 거점 · Lv.8 성장 개방",
+          next: "lantern-house"
+        }
+      ]
+    },
+    // 조사와 훈련은 선택입니다. 증거가 적어도 마지막 선택까지 갈 수 있습니다.
+    "lantern-house": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "꺼뜨릴 수 없는 등불",
+      place: "왕도 · 등불 조합 지하방",
+      paragraphs: [
+        "왕관의 서기관, 교단의 장례사, 조합의 수레꾼이 같은 탁자에 앉아 있다. 세 세력의 이름이 모두 찍힌 반출 명령을 보고 누구도 자기 편만 무죄라고 말하지 못한다.",
+        "왕실 서고의 원본과 광장의 시민 증언을 확보하면 명령의 책임을 더 분명히 물을 수 있다. 조사에 실패해도 리안이 남은 기록을 복구할 길을 열어준다. 충분히 준비했다면 보관소 경비 장치를 먼저 멈춰도 된다.",
+        "골목의 밀랍 운반체와 봉인 수호체는 여전히 살아 있는 기억을 실어 나른다. 이들을 제압하며 성장하고, 이 방으로 돌아와 쉬자. 보관소 외곽은 Lv.6, 중앙 장치는 Lv.7, 마지막 심장은 Lv.8이 권장된다."
+      ],
+      choices: [
+        {
+          id: "seek-royal-record",
+          label: "왕실 서고에서 반출 원본을 찾는다",
+          detail: "선택 조사 · 백야와 명령의 기원",
+          unlessClue: "왕실 반출 원본",
+          next: "royal-archive"
+        },
+        {
+          id: "seek-citizens",
+          label: "광장에서 기억을 잃은 시민들을 만난다",
+          detail: "선택 조사 · 피해자들의 증언",
+          unlessClue: "수도 시민 공동 증언",
+          next: "witness-square"
+        },
+        {
+          id: "train-envoy",
+          label: "골목의 밀랍 운반체를 멈춘다",
+          detail: "반복 전투 · 권장 Lv.4",
+          encounter: "wax-envoy",
+          next: "lantern-house",
+          retreat: "lantern-house"
+        },
+        {
+          id: "train-bailiff",
+          label: "법원 지하의 침묵 집행관과 싸운다",
+          detail: "반복 전투 · 권장 Lv.5",
+          encounter: "silent-bailiff",
+          next: "lantern-house",
+          retreat: "lantern-house"
+        },
+        {
+          id: "train-marshal",
+          label: "외곽 순찰 수호체를 제압한다",
+          detail: "반복 전투 · 권장 Lv.6",
+          encounter: "vault-marshal",
+          next: "lantern-house",
+          retreat: "lantern-house"
+        },
+        {
+          id: "rest-capital",
+          label: "등불 아래에서 기력을 회복한다",
+          detail: "기력 전부 회복 · 경험치 없음",
+          rest: true,
+          next: "lantern-house"
+        },
+        {
+          id: "breach-vault",
+          label: "제9보관소의 외곽 방어선을 돌파한다",
+          detail: "본편 전투 · 권장 Lv.6",
+          unlessVisited: "ninth-vault",
+          encounter: "vault-marshal",
+          next: "ninth-vault",
+          retreat: "lantern-house"
+        },
+        {
+          id: "return-vault",
+          label: "열어 둔 입구로 보관소에 돌아간다",
+          detail: "재전투 없이 진입",
+          requiresVisited: "ninth-vault",
+          unlessVisited: "empty-throne",
+          next: "ninth-vault"
+        },
+        {
+          id: "return-core",
+          label: "리안의 통로로 중앙 장치에 돌아간다",
+          detail: "외곽 경비를 다시 상대하지 않음",
+          requiresVisited: "empty-throne",
+          unlessVisited: "breathing-vault",
+          next: "core-breach"
+        },
+        {
+          id: "return-heart",
+          label: "안정시킨 중앙 통로로 심장 앞에 돌아간다",
+          detail: "첫 단계 보스를 다시 상대하지 않음",
+          requiresVisited: "breathing-vault",
+          next: "breathing-vault"
+        }
+      ]
+    },
+    "royal-archive": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "왕들이 고친 역사",
+      place: "왕실 서고 · 봉인 문서실",
+      paragraphs: [
+        "리안이 보여준 오래된 문서에는 왕의 이름이 두 겹으로 겹쳐 있다. 백야 직전의 왕조는 패한 가문의 명부를 한곳에 모아 지웠다. 공동의 기억을 지킨다던 제도가 기억을 독점한 밤이었다.",
+        "문서의 남은 이름과 장례문은 죽은 사람을 되살리는 비법이 아니다. 원래 이름을 다시 읽고 장례를 잇는다면 안식을 되찾을 수 있다는 오래된 경고다. 칼드가 가져간 부분은 그 경고 다음 장이다."
+      ],
+      choices: [
+        {
+          id: "read-undertext",
+          label: "지워진 잉크 아래의 삭제 명령을 읽는다",
+          detail: "통찰 판정 · 난이도 17",
+          check: { stat: "wit", dc: 17 },
+          clue: "백야 삭제 명령",
+          damage: 2,
+          success: "재력 원년 이전의 삭제 명령을 판독했다. 기억을 한 손에 모으는 일이 봉인을 강하게 한다는 칼드의 주장은, 백야의 실수를 되풀이하는 것이었다.",
+          failure: "봉인 잉크에 손이 베이고 삭제 문장은 복구하지 못했다. 하지만 남은 반출 번호와 왕실 승인 인장은 대조할 수 있다. 리안이 별도 장부를 찾아온다.",
+          next: "royal-proof"
+        }
+      ]
+    },
+    "royal-proof": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "명령의 원본",
+      place: "왕실 서고 · 대조 탁자",
+      paragraphs: [
+        "지방의 명부, 주조소 운송장, 왕실 원본의 번호가 맞아떨어진다. 칼드의 서명 위에는 비상 행정회의의 인장이 있다. 한 사제의 일탈로 덮을 수 없는 반출이었다.",
+        "리안은 증거를 세 벌 베껴 왕관·교단·조합 밖의 증인에게도 맡긴다. 원본이 사라져도 이번에는 모두가 같은 밤에 잊지는 않을 것이다."
+      ],
+      choices: [
+        {
+          id: "secure-royal-proof",
+          label: "왕실 반출 원본을 증인들에게 맡긴다",
+          detail: "최종 책임 규명에 반영",
+          discover: "왕실 반출 원본",
+          next: "lantern-house"
+        }
+      ]
+    },
+    "witness-square": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "비어 있는 의자들의 광장",
+      place: "왕도 · 이름의 광장",
+      quote: "“내가 잊은 사람을, 당신은 기억하나요?”",
+      paragraphs: [
+        "빵집 주인, 하역꾼, 장례사가 의자를 하나씩 들고 나왔다. 기억을 징발당한 뒤 누구의 자리였는지 잊은 의자들이다. 증언을 들으러 온 관리들은 공고문만 적고 돌아서려 한다.",
+        "당신은 이들에게 이름 하나를 억지로 떠올리게 할 수 없다. 대신 함께 살았던 하루를 말하게 할 수는 있다. 수프의 냄새, 못 고치던 창문, 먼저 건네던 인사. 작은 기억들이 서로의 빈자리를 맞춘다."
+      ],
+      choices: [
+        {
+          id: "hear-citizens",
+          label: "사라진 이름 대신 함께한 하루를 들려달라고 한다",
+          detail: "의지 판정 · 난이도 16",
+          check: { stat: "spirit", dc: 16 },
+          clue: "증인들의 공동 선언",
+          damage: 1,
+          success: "시민들이 서로의 말을 이어 공동 선언을 완성한다. 강제 반출에 동의한 적이 없다는 서명이 광장 전체로 퍼진다.",
+          failure: "두려움 때문에 모두가 공개 서명을 하지는 못한다. 당신은 설득을 강요하지 않고 리안에게 비공개 증언 절차를 부탁한다. 봉인 공고를 떼다가 손끝을 다친다.",
+          next: "witness-proof"
+        }
+      ]
+    },
+    "witness-proof": {
+      chapter: "제5장 · 왕도의 빈 의자",
+      title: "누군가의 말이 증거가 될 때",
+      place: "왕도 · 장례사 회관",
+      paragraphs: [
+        "장례사 회관은 공개·비공개 증언을 당사자가 고른 방식으로 받는다. 참여한 시민들의 원래 기억을 읽어내거나 빼앗지 않고, 그들이 직접 한 말을 기록한다.",
+        "왕실의 인장만이 증거인 것은 아니다. 반출된 이름과 주소가 같은 사람이 지금 여기 살아 있고, 그가 동의하지 않았다고 말하고 있다."
+      ],
+      choices: [
+        {
+          id: "secure-citizen-proof",
+          label: "시민들의 동의 아래 증언 사본을 확보한다",
+          detail: "최종 책임 규명에 반영",
+          discover: "수도 시민 공동 증언",
+          next: "lantern-house"
+        }
+      ]
+    },
+    "ninth-vault": {
+      chapter: "제6장 · 제9보관소",
+      title: "살아 있는 기억의 창고",
+      place: "제9보관소 · 반출 장부실",
+      paragraphs: [
+        "외곽 수호체가 멈춘 뒤 리안은 안쪽 문을 잠그는 대신 열어 둔다. 노동자들이 통로를 확보하고 기억 용기를 운반한다. 당신이 쓰러져도 구조대가 같은 길로 들어올 수 있다.",
+        "실험 장부에는 국왕의 병세가 호전되지 않았다는 보고와 중앙 봉인의 출력 수치가 나란히 적혀 있다. 기억을 바꿔 병과 죽음을 없앨 수 없다는 사실을 칼드는 이미 알고 있었다.",
+        "서리여울의 검은 밀랍은 전국의 수집망 중 한 갈래였다. 첫 봉헌에서 빼앗긴 기억도 이곳으로 옮겨졌다. 중앙 장치를 멈추고 당사자와 용기를 대조해야 되돌릴 수 있다."
+      ],
+      choices: [
+        {
+          id: "take-experiment-ledger",
+          label: "실험 장부와 원래 이름의 색인을 보존한다",
+          detail: "필수 증거 · 망자의 이름도 장례로 돌려보냄",
+          discover: "제9보관소 실험 장부",
+          add: "원래 이름 색인",
+          next: "empty-throne"
+        }
+      ]
+    },
+    "empty-throne": {
+      chapter: "제6장 · 제9보관소",
+      title: "빈 왕좌를 지킨 사람",
+      place: "제9보관소 · 중앙 관제실",
+      quote: "“기억할 사람이 사라지면, 왕국도 사라진다. 그래서 내가 대신하려 했다.”",
+      paragraphs: [
+        "감찰관 칼드 렌은 왕좌가 아닌 빈 기록 의자에 앉아 있다. 왕의 병을 고치겠다는 공약으로 모은 권한이 그의 손에 쌓였다. 병은 낫지 않았고, 그는 이제 기억을 빼앗아서라도 나라를 보존하겠다고 주장한다.",
+        "“흩어진 증언은 사라진다. 이곳에 모두 모으면 다시는 백야가 오지 않아.” 그러나 벽의 명부는 이미 하얗게 번지고 있다. 한곳에 강제로 모은 기억이 서로를 지우는 것이, 지금 일어나는 일이다.",
+        "당신이 싸워야 할 것은 이 사람의 몸이 아니라 강제 수집을 계속하는 중앙 장치다. 리안이 칼드를 증인들의 보호·감시 아래 데려가려 한다. 마지막으로, 그의 책임을 인정하게 할 수 있다."
+      ],
+      choices: [
+        {
+          id: "demand-confession",
+          label: "칼드에게 자신의 이름으로 명령을 인정하라고 한다",
+          detail: "의지 판정 · 난이도 18 · 실패해도 진행",
+          check: { stat: "spirit", dc: 18 },
+          clue: "칼드의 자백",
+          damage: 0,
+          success: "“명령은 내가 내렸다.” 칼드는 처음으로 왕의 이름 뒤에 숨지 않는다. 리안이 그 말을 기록한다. 중앙 장치는 이미 명령 없이도 기억을 빨아들이고 있다.",
+          failure: "칼드는 왕국을 위한 일이었다는 말만 되풀이한다. 당신은 그를 해치지 않고 장부를 증인에게 넘긴다. 자백이 없어도 명령의 기록은 남았다.",
+          next: "core-breach"
+        },
+        {
+          id: "preserve-trial",
+          label: "재판은 증인들에게 맡기고 장치를 멈추러 간다",
+          detail: "자백을 강요하지 않음",
+          next: "core-breach"
+        }
+      ]
+    },
+    "core-breach": {
+      chapter: "제7장 · 마지막 종",
+      title: "왕관의 기계",
+      place: "제9보관소 · 중앙 봉인륜",
+      paragraphs: [
+        "일곱 은심이 기억 용기를 하나의 이름으로 덮어쓰고 있다. 왕관의 기계는 자신을 지키는 명령까지 복제했다. 이 첫 방어층을 부숴야 강제 수집망을 끊을 수 있다.",
+        "리안과 구조대가 뒤편 통로를 지킨다. 권장 레벨은 7. 후퇴해도 확보한 증거와 외곽 통로는 남는다. 준비가 부족하면 은신처에서 훈련하고 돌아올 수 있다."
+      ],
+      choices: [
+        {
+          id: "shatter-crown",
+          label: "왕관의 기계와 맞선다",
+          detail: "최종 전투 1단계 · 권장 Lv.7",
+          unlessVisited: "breathing-vault",
+          encounter: "crown-engine",
+          next: "breathing-vault",
+          retreat: "lantern-house"
+        },
+        {
+          id: "rest-before-crown",
+          label: "확보한 통로에서 기력을 회복한다",
+          detail: "기력 전부 회복",
+          rest: true,
+          next: "core-breach"
+        },
+        {
+          id: "train-before-crown",
+          label: "은신처에서 더 준비한다",
+          detail: "조사와 추가 전투 가능",
+          next: "lantern-house"
+        }
+      ]
+    },
+    // 첫 단계는 한 번만 보상합니다. 후퇴해 돌아와도 여기서 두 번째 단계에 바로 도전합니다.
+    "breathing-vault": {
+      chapter: "제7장 · 마지막 종",
+      title: "이름 없는 심장의 숨",
+      place: "제9보관소 · 봉인의 심장",
+      paragraphs: [
+        "은심이 멈췄지만 그 안에서 검은 유리가 마지막 형체를 만든다. 서리여울에서 남겨진 자가 흉내 냈던 목소리들이 여기서는 수백 겹으로 겹친다. 버려진 기억을 한 몸에 묶어두려는 장치의 마지막 명령이다.",
+        "리안은 용기를 바깥으로 옮기고 장례사들은 원래 이름 색인을 읽기 시작한다. 당신이 심장의 은사슬을 끊는 동안 각자의 기억이 제 그릇을 되찾을 것이다. 죽은 이에게 삶을, 살아 있는 이에게 죽음을 강요하는 의식은 없다.",
+        "권장 레벨은 8. 첫 방어층은 이미 부서져 다시 싸우지 않아도 된다. 이곳에서 회복하거나 은신처로 돌아가 준비할 수 있다."
+      ],
+      choices: [
+        {
+          id: "face-unwritten",
+          label: "이름 없는 심장의 사슬을 끊는다",
+          detail: "최종 전투 2단계 · 권장 Lv.8",
+          encounter: "unwritten-heart",
+          next: "last-oath",
+          retreat: "breathing-vault"
+        },
+        {
+          id: "rest-before-heart",
+          label: "동료들의 목소리를 들으며 쉰다",
+          detail: "기력 전부 회복",
+          rest: true,
+          next: "breathing-vault"
+        },
+        {
+          id: "train-before-heart",
+          label: "은신처로 돌아가 마지막 준비를 한다",
+          detail: "첫 단계 재전투 없이 복귀 가능",
+          next: "lantern-house"
+        }
+      ]
+    },
+    "last-oath": {
+      chapter: "종장 · 잿빛 서약",
+      title: "이제 누가 기억할 것인가",
+      place: "왕도 · 마지막 종이 멎은 뒤",
+      quote: "“이번에는, 기억을 맡기는 사람이 스스로 고르게 하자.”",
+      paragraphs: [
+        "사슬이 끊기자 겹친 목소리들이 각자의 이름으로 갈라진다. 당사자가 살아 있는 기억은 용기에 남고, 망자의 이름은 장례사들의 낭독을 따라 안식으로 이어진다. 남겨진 자는 새 먹이를 기다리는 괴물로 남지 않고, 서로 다른 이야기로 풀린다.",
+        "왕관의 기계와 강제 수집망은 끝났다. 칼드와 승인자들의 책임은 증거와 증인들이 물을 것이다. 하지만 종을 지킬 제도와 기억을 맡을 사람들은 당신의 칼로 정할 수 없다. 광장에 모인 이들이 마지막 제안을 기다린다.",
+        "세 제안 모두 살아 있는 사람에게 기억을 내놓으라 강요하지 않는다. 같은 일을 다시 막기 위해, 당신은 어떤 서약을 남길까. 이 선택에는 주사위가 없다."
+      ],
+      choices: [
+        {
+          id: "choose-covenant",
+          label: "마을들이 함께 관리하는 기록의 서약을 맺는다",
+          detail: "분산 명부와 서로의 증언 · 공동 기록 결말",
+          next: "ending-covenant"
+        },
+        {
+          id: "choose-unbound",
+          label: "중앙의 독점권을 없애고 기억의 길을 연다",
+          detail: "지역의 종과 노래를 자율로 · 열린 길 결말",
+          next: "ending-unbound"
+        },
+        {
+          id: "choose-vigil",
+          label: "동의를 원칙으로 삼는 보관소의 첫 감시자가 된다",
+          detail: "임기와 공개 감사 · 등불지기 결말",
+          next: "ending-vigil"
+        }
+      ]
+    },
+    "ending-covenant": {
+      chapter: "완결 · 공동 기록의 서약",
+      title: "여럿이 기억하는 왕국",
+      place: "서리여울 · 일 년 뒤",
+      ending: true,
+      final: true,
+      paragraphs: [
+        "왕실 단독 명부는 닫히고, 마을·도시·안개벌이 보관하는 서로 다른 사본이 만들어진다. 공개하는 것은 반출 명령과 관리 규칙이며, 개인의 기억을 모두에게 펼쳐 보이는 것이 아니다. 당사자는 자신의 기록을 맡길 곳과 증언할 범위를 고른다.",
+        "누군가 기록을 고치면 다른 사본과 증인이 차이를 밝힌다. 번거롭고 느리지만, 이제 한 사람이 모두의 이름을 지울 수 없다. 당신이 제안한 서약은 검이 아니라 서로의 확인으로 유지된다."
+      ]
+    },
+    "ending-unbound": {
+      chapter: "완결 · 열린 길의 서약",
+      title: "종보다 멀리 가는 노래",
+      place: "서리여울 · 일 년 뒤",
+      ending: true,
+      final: true,
+      paragraphs: [
+        "해체하는 것은 강제 수집을 독점한 중앙망이다. 마을의 자발적인 봉인종까지 부수지는 않는다. 종 주조법과 안전한 장례문이 공개되고, 종을 세울지 노래를 이을지는 각 공동체가 정한다.",
+        "지역마다 다른 방법을 인정하는 일은 다툼도 낳는다. 조합의 호송대와 교단의 장례사들은 지시하는 대신 협의하는 법을 배운다. 왕국의 경계보다 넓은 기억의 길 위에서, 당신은 처음으로 누구의 허락도 필요 없는 등불을 본다."
+      ]
+    },
+    "ending-vigil": {
+      chapter: "완결 · 등불지기의 서약",
+      title: "빈 의자를 남기는 보관소",
+      place: "서리여울 · 일 년 뒤",
+      ending: true,
+      final: true,
+      paragraphs: [
+        "제9보관소는 동의한 기록만 맡는 공동 보관소로 바뀐다. 기억을 추출하는 장치는 폐기하고, 당사자가 직접 남긴 말과 이미 회수한 용기를 관리한다. 임기가 있는 감시자와 외부 감사자가 서로의 권한을 제한한다.",
+        "당신은 첫 감시자를 맡지만 새 왕이나 영구한 연료가 되지는 않는다. 첫 임기를 마칠 때 의자를 비워 다음 사람에게 넘긴다. 자리를 비워도 무너지지 않는 제도가, 혼자 지켜내는 왕좌보다 오래 남는다는 것을 증명한다."
       ]
     }
   };
@@ -2181,7 +2658,8 @@ dialog > p:not(.eyebrow) {
       ]
     },
     // 중반 장면을 같은 장면 사전에 합쳐 next ID로 두 막을 조회할 수 있게 합니다.
-    ...MIDGAME_SCENES
+    ...MIDGAME_SCENES,
+    ...FINALE_SCENES
   };
 
   // data/monsters.mjs
@@ -2245,6 +2723,73 @@ dialog > p:not(.eyebrow) {
       damage: 6,
       experience: 160,
       description: "기억을 운반하는 종 껍데기로 만든 수호체. 은심을 끊으면 붙들린 기억을 다치게 하지 않고 멈출 수 있다."
+    },
+    // 왕도 반복 전투. 수치는 고정되어 성장 이후에는 경험치 증가 규칙이 적용됩니다.
+    "wax-envoy": {
+      id: "wax-envoy",
+      defeatText: "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+      retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+      name: "밀랍 운반체",
+      level: 4,
+      health: 26,
+      defense: 13,
+      attack: 4,
+      damage: 5,
+      experience: 160,
+      description: "기억 용기를 옮기는 빈 수레와 갑옷의 결합체. 은사슬만 끊으면 안의 용기는 무사하다."
+    },
+    "silent-bailiff": {
+      id: "silent-bailiff",
+      defeatText: "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+      retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+      name: "침묵 집행관",
+      level: 5,
+      health: 32,
+      defense: 14,
+      attack: 5,
+      damage: 6,
+      experience: 200,
+      description: "사람의 자리를 대신한 법원 경비 장치. 명부에 없는 이를 모두 침입자로 처리한다."
+    },
+    "vault-marshal": {
+      id: "vault-marshal",
+      defeatText: "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+      retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+      name: "보관소 외곽 수호체",
+      level: 6,
+      health: 38,
+      defense: 15,
+      attack: 6,
+      damage: 7,
+      experience: 240,
+      description: "제9보관소의 순찰 장치. 살아 있는 경비병이 아니라 반출 명령으로 움직이는 빈 갑옷이다."
+    },
+    // 두 단계 보스는 각각 다른 장면에서 정산하여 첫 단계 재보상 없이 재도전할 수 있습니다.
+    "crown-engine": {
+      id: "crown-engine",
+      defeatText: "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+      retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+      name: "왕관의 기계",
+      level: 7,
+      health: 48,
+      defense: 16,
+      attack: 6,
+      damage: 8,
+      experience: 260,
+      description: "일곱 은심을 강제로 하나의 이름에 묶는 중앙 장치. 바깥 봉인륜을 부수면 수집망이 끊긴다."
+    },
+    "unwritten-heart": {
+      id: "unwritten-heart",
+      defeatText: "구조대가 당신을 안정된 중앙 통로로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+      retreatText: "안정된 중앙 통로까지 물러났다. 첫 방어층은 다시 생기지 않는다. 경험치는 얻지 못했다.",
+      name: "이름 없는 심장",
+      level: 8,
+      health: 58,
+      defense: 18,
+      attack: 7,
+      damage: 9,
+      experience: 340,
+      description: "남겨진 기억을 놓지 못하는 장치의 마지막 형체. 은사슬을 끊어 각각의 이름으로 돌려보내야 한다."
     }
   };
   var COMBAT_ACTIONS = {
@@ -2257,29 +2802,38 @@ dialog > p:not(.eyebrow) {
       name: "응급 처치",
       detail: "기력 4 + 레벨 회복 · 전투당 2회 · 적도 행동"
     },
-    flee: { name: "야영지로 후퇴", detail: "항상 성공 · 경험치 없음" }
+    flee: { name: "안전한 곳으로 후퇴", detail: "항상 성공 · 경험치 없음" }
   };
 
   // domain/experience-policy.mjs
   var ExperiencePolicy = class _ExperiencePolicy {
     // 각 인덱스+1 레벨이 시작되는 누적 경험치. 변경을 막기 위해 배열을 freeze합니다.
-    static LEVEL_THRESHOLDS = Object.freeze([0, 80, 200, 380, 620]);
+    static LEVEL_THRESHOLDS = Object.freeze([
+      0,
+      80,
+      200,
+      380,
+      620,
+      950,
+      1400,
+      2e3
+    ]);
     // 경계 배열 길이로 최대 레벨을 정해 두 설정이 따로 어긋나지 않게 합니다.
     static MAX_LEVEL = _ExperiencePolicy.LEVEL_THRESHOLDS.length;
-    /** 누적 경험치가 통과한 경계 수를 세어 Lv.1~5를 구합니다. 마지막 경계 뒤에도 레벨은 5입니다. */
-    static levelFor(totalExperience) {
+    /** 경계와 해당 막의 상한으로 레벨을 계산합니다. 기존 전투의 수치를 보존하려고 상한을 인수로 받습니다. */
+    static levelFor(totalExperience, levelCap = _ExperiencePolicy.MAX_LEVEL) {
       let level = 1;
       for (const threshold of _ExperiencePolicy.LEVEL_THRESHOLDS.slice(1)) {
-        if (totalExperience < threshold) break;
+        if (totalExperience < threshold || level >= levelCap) break;
         level++;
       }
       return level;
     }
     /** 현재 레벨 시작점 이후의 경험치와 다음 레벨까지의 구간 크기를 반환합니다. 최고 레벨은 required=null입니다. */
-    static progress(totalExperience) {
-      const level = _ExperiencePolicy.levelFor(totalExperience);
+    static progress(totalExperience, levelCap = _ExperiencePolicy.MAX_LEVEL) {
+      const level = _ExperiencePolicy.levelFor(totalExperience, levelCap);
       const start = _ExperiencePolicy.LEVEL_THRESHOLDS[level - 1];
-      const next = _ExperiencePolicy.LEVEL_THRESHOLDS[level] ?? null;
+      const next = level >= levelCap ? null : _ExperiencePolicy.LEVEL_THRESHOLDS[level];
       return {
         current: totalExperience - start,
         required: next === null ? null : next - start
@@ -2325,6 +2879,8 @@ dialog > p:not(.eyebrow) {
     #items;
     // 레벨업 시 차감하지 않는 전체 누적 경험치입니다.
     #experience = 0;
+    // 이전 v2 저장은 Lv.5 계산을 그대로 재생합니다. 왕도 진입 기록에서만 Lv.8을 엽니다.
+    #levelCap = 5;
     /** 등록된 출신만 허용하고 해당 출신의 시작 소지품을 지급합니다. */
     constructor(originId = "warden") {
       if (!Object.hasOwn(ORIGINS, originId)) throw new Error("알 수 없는 출신");
@@ -2353,7 +2909,7 @@ dialog > p:not(.eyebrow) {
     }
     /** 누적 경험치로 현재 레벨을 계산합니다. 별도 레벨 필드를 저장해 불일치를 만들지 않습니다. */
     get level() {
-      return ExperiencePolicy.levelFor(this.#experience);
+      return ExperiencePolicy.levelFor(this.#experience, this.#levelCap);
     }
     /** 전체 모험에서 획득한 누적 경험치입니다. 레벨업해도 차감하지 않습니다. */
     get experience() {
@@ -2361,7 +2917,15 @@ dialog > p:not(.eyebrow) {
     }
     /** 경험치 막대용 현재 구간 수치입니다. 최고 레벨이면 required가 null입니다. */
     get experienceProgress() {
-      return ExperiencePolicy.progress(this.#experience);
+      return ExperiencePolicy.progress(this.#experience, this.#levelCap);
+    }
+    /** 현재 막에서 허용하는 성장 상한입니다. 누적 경험치는 상한 이후에도 보존합니다. */
+    get levelCap() {
+      return this.#levelCap;
+    }
+    /** 왕도 진입 때만 상한을 엽니다. 이전 전투의 피해·보상 계산을 소급 변경하지 않습니다. */
+    unlockFinaleGrowth() {
+      this.#levelCap = ExperiencePolicy.MAX_LEVEL;
     }
     /** Lv.1은 10이며 레벨마다 최대 기력이 4씩 증가합니다. */
     get maxHealth() {
@@ -2430,6 +2994,7 @@ dialog > p:not(.eyebrow) {
       character.#health = this.#health;
       character.#items = [...this.#items];
       character.#experience = this.#experience;
+      character.#levelCap = this.#levelCap;
       return character;
     }
   };
@@ -2528,7 +3093,9 @@ dialog > p:not(.eyebrow) {
       this.#round++;
       if (actionId === "flee") {
         this.#status = "escaped";
-        turn.lines.push("교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다.");
+        turn.lines.push(
+          this.#monster.retreatText ?? "교전을 끊고 야영지로 물러났다. 경험치는 얻지 못했다."
+        );
       } else {
         this.#playerTurn(actionId, character, dice, turn);
         if (this.#enemyHealth === 0) {
@@ -2539,7 +3106,7 @@ dialog > p:not(.eyebrow) {
           if (character.health === 0) {
             this.#status = "defeat";
             turn.lines.push(
-              "동료가 당신을 야영지로 옮겼다. 경험치 없이 기력 1로 돌아왔다."
+              this.#monster.defeatText ?? "동료가 당신을 야영지로 옮겼다. 경험치 없이 기력 1로 돌아왔다."
             );
           }
         }
@@ -2610,6 +3177,89 @@ dialog > p:not(.eyebrow) {
     }
   };
 
+  // data/campaign.mjs
+  var CHAPTER_TRANSITIONS = {
+    "ending-seal": {
+      next: "road-oath",
+      label: "중반부로 여정을 이어간다",
+      button: "중반부로 떠나기 →"
+    },
+    "ending-dawn": {
+      next: "road-oath",
+      label: "중반부로 여정을 이어간다",
+      button: "중반부로 떠나기 →"
+    },
+    "ending-price": {
+      next: "road-oath",
+      label: "중반부로 여정을 이어간다",
+      button: "중반부로 떠나기 →"
+    },
+    "act2-ending": {
+      next: "capital-gate",
+      label: "왕도로 여정을 이어간다",
+      button: "왕도로 향하기 →",
+      unlockGrowth: true
+    }
+  };
+  var FINAL_EVIDENCE = [
+    "왕실 반출 원본",
+    "수도 시민 공동 증언",
+    "제9보관소 실험 장부"
+  ];
+  var ACT_PRESENTATION = {
+    1: {
+      label: "제1막 · 서리여울",
+      footer: "제1막: 서리여울",
+      numeral: "I",
+      art: "별 아래 서리여울의 종탑과 안개 낀 마을"
+    },
+    2: {
+      label: "제2막 · 별무덤",
+      footer: "제2막: 염로와 별무덤",
+      numeral: "II",
+      art: "안개와 산맥 아래 선 봉인종의 탑"
+    },
+    3: {
+      label: "최종막 · 왕도",
+      footer: "최종막: 왕도와 제9보관소",
+      numeral: "III",
+      art: "왕도의 봉인종 탑과 오래된 성곽의 실루엣"
+    }
+  };
+
+  // domain/campaign-resolution.mjs
+  var VILLAGE_EPILOGUES = {
+    "ending-seal": "서리여울에서는 복구한 종이 저녁마다 울린다. 오르벤은 법정에서 자신이 뒤집은 장례문을 증언했고, 처벌과 배상 뒤 마을의 감시 아래 지워진 명부를 복원한다. 사죄는 책임을 대신하지 않았다.",
+    "ending-dawn": "서리여울은 새 은종을 받을 권리와 거절할 권리를 함께 얻었다. 주민들은 여전히 저녁마다 이름을 노래한다. 세른이 가르친 노래는 교단의 허가 없이도 애도를 지킬 수 있다는 변경의 증거가 된다.",
+    "ending-price": "회수 목록에서 당신이 내어준 저녁의 기억을 찾았다. 검은 밀랍망을 통해 옮겨진 살아 있는 기억이었다. 동의 아래 용기를 열자 문을 열어주던 이의 얼굴과 빵 냄새가 돌아온다. 그 사람이 되살아난 것은 아니다. 서리여울의 시한부 거래도 끝나고, 주민들의 공동 의식이 봉인을 대신 지킨다."
+  };
+  var ORIGIN_EPILOGUES = {
+    warden: "당신은 새로운 근위대의 지휘권 대신 변경의 호송 일을 택한다. 이제 검은 기억을 빼앗으라는 명령이 아니라 사람을 집으로 데려가는 약속을 지킨다.",
+    scribe: "당신은 성흔 수도원으로 돌아가 추방된 기록자들의 명부부터 연다. 스승의 잃은 이름을 모두 되찾지는 못했지만, 누구도 남의 공백을 멋대로 채우지 않는 기록법을 가르친다.",
+    ranger: "당신은 안개벌과 왕도를 잇는 길에 새 표석을 세운다. 지도에는 길뿐 아니라 길을 돌본 사람들의 이름도 적힌다. 길잡이의 일은 누군가를 잊지 않고 데려오는 일이 된다."
+  };
+  var CampaignResolution = class _CampaignResolution {
+    /** 증거 수만으로 선악 점수를 매기지 않고, 책임을 입증하는 구체성을 구분합니다. */
+    static evidenceCount(clues) {
+      return FINAL_EVIDENCE.filter((clue) => clues.includes(clue)).length;
+    }
+    /** 세 결말 공통으로 미해결 시한과 주요 인물의 행방을 마무리합니다. */
+    static epilogue({ firstEnding, clues, originId }) {
+      const evidence = _CampaignResolution.evidenceCount(clues);
+      const accountability = evidence === FINAL_EVIDENCE.length ? "왕실 원본, 시민 증언, 실험 장부가 서로를 입증한다. 칼드 렌과 반출을 승인한 감찰관들은 독립 재판에 선다. 왕관·교단·조합 누구도 책임을 사제 한 사람에게 떠넘기지 못했다." : "실험 장부로 강제 수집은 입증되었다. 칼드 렌은 재판에 섰지만 모든 승인자를 가리킬 증언은 부족했다. 시민들이 후속 조사에 참여하며 이름이 빠진 피해자들을 명부에 더한다. 끝난 모험 뒤에도 책임을 묻는 일은 사람들의 몫으로 남는다.";
+      const confession = clues.includes("칼드의 자백") ? "칼드는 재판에서 명령이 자신의 것이었음을 다시 인정했다. 뒤늦은 고백이 피해를 지우지는 못했다." : "칼드는 기계가 왕국을 위한 선택이었다고 항변했다. 법정은 그의 의도가 아니라 강제로 빼앗은 기억과 명령의 책임을 물었다.";
+      return [
+        accountability,
+        confession,
+        VILLAGE_EPILOGUES[firstEnding],
+        "병든 왕은 병이 낫지 않은 채 퇴위한다. 기억의 교환으로 젊음이나 죽은 사람을 되돌릴 수 있다는 약속은 거짓이었다. 회수한 기억은 살아 있는 당사자에게 동의를 받아 돌려주고, 망자의 원래 이름은 공개 장례에서 읽어 안식을 잇는다.",
+        "네라는 미르와 함께 여관 식탁에 앉고, 이벤은 빈 의자의 주인이 누구였는지 이야기한다. 토벤의 형편없는 농담에 모두가 다시 웃는다. 에다는 종 도면을 여러 마을에 나누고 세른은 강 양편의 노래를 기록한다. 리안은 피해자들이 직접 고친 명부를 돌려준다. 누구도 혼자서 모두를 기억하라는 짐을 지지 않는다.",
+        ORIGIN_EPILOGUES[originId],
+        "일 년 뒤, 서리여울의 추수상에는 다시 빈 의자가 놓였다. 이번에는 누구를 위한 자리인지 모두가 안다. 네라가 당신에게 등불을 건넨다. 처음과 달리 그녀는 먼저 자기 이름을 말한다. 이야기는 여기서 끝난다. 기억하는 삶은 계속된다."
+      ];
+    }
+  };
+
   // domain/adventure.mjs
   var INVESTIGATION_SCENES = ["chapel", "archive", "river"];
   var MAX_INVESTIGATIONS = 2;
@@ -2648,9 +3298,22 @@ dialog > p:not(.eyebrow) {
     get sceneId() {
       return this.#sceneId;
     }
-    /** 현재 장면 데이터를 읽습니다. 중반 도입부만 첫 결말에 맞는 문장을 새 객체에 덧붙입니다. */
+    /** 도입에는 첫 결말의 동기를, 완결에는 실제 선택·증거·출신에 맞는 후일담을 붙입니다. */
     get scene() {
       const scene = SCENES[this.#sceneId];
+      if (scene.final) {
+        return {
+          ...scene,
+          paragraphs: [
+            ...scene.paragraphs,
+            ...CampaignResolution.epilogue({
+              firstEnding: this.firstEnding,
+              clues: this.clues,
+              originId: this.#character.originId
+            })
+          ]
+        };
+      }
       if (this.#sceneId !== "road-oath") return scene;
       const firstEnding = this.#visited.find(
         (sceneId) => Object.hasOwn(JOURNEY_ROUTES, sceneId)
@@ -2664,9 +3327,46 @@ dialog > p:not(.eyebrow) {
     get isComplete() {
       return Boolean(this.scene.ending);
     }
-    /** 첫 결말 세 종류에서만 중반부로 이어갈 수 있습니다. 중반 종료에는 다음 막이 아직 없습니다. */
+    /** 막 종료와 전체 완결을 구분합니다. 중반 종료에서도 왕도로 이어갈 수 있습니다. */
     get canContinue() {
-      return Object.hasOwn(JOURNEY_ROUTES, this.#sceneId);
+      return Object.hasOwn(CHAPTER_TRANSITIONS, this.#sceneId);
+    }
+    /** UI가 추측하지 않고 실제 다음 막의 이름을 표시하도록 합니다. */
+    get continuationLabel() {
+      return CHAPTER_TRANSITIONS[this.#sceneId]?.button ?? "";
+    }
+    /** 완결 장면에는 더 진행하는 버튼이나 선택지가 없습니다. */
+    get isFinished() {
+      return Boolean(SCENES[this.#sceneId].final);
+    }
+    /** 현재 막 번호입니다. 방문 이력으로 계산하므로 지름길과 후퇴에도 유지됩니다. */
+    get actNumber() {
+      return this.hasVisited("capital-gate") ? 3 : this.isMidgame ? 2 : 1;
+    }
+    /** 처음 선택한 서약을 완결 후에도 보존합니다. */
+    get firstEnding() {
+      return this.#visited.find(
+        (sceneId) => Object.hasOwn(JOURNEY_ROUTES, sceneId)
+      );
+    }
+    /** 최종막 선택 조사의 진행량입니다. 수집을 마치지 않아도 모든 최종 서약을 선택할 수 있습니다. */
+    get evidenceCount() {
+      return CampaignResolution.evidenceCount(this.#clues);
+    }
+    /** 결말 화면과 내보내기에 사용하는 실제 플레이 요약입니다. */
+    get endingSummary() {
+      if (!this.isFinished) return null;
+      return {
+        firstOath: SCENES[this.firstEnding].title,
+        lastOath: this.scene.title,
+        level: this.#character.level,
+        experience: this.#character.experience,
+        victories: this.#history.filter(
+          (entry) => entry.kind === "combat" && entry.combat.status === "victory"
+        ).length,
+        evidence: this.evidenceCount,
+        evidenceTotal: FINAL_EVIDENCE.length
+      };
     }
     /** 중반 도입부를 방문했는지로 현재 막을 구분합니다. 반복해서 야영지로 돌아가도 유지됩니다. */
     get isMidgame() {
@@ -2739,19 +3439,22 @@ dialog > p:not(.eyebrow) {
       }
       this.#applyChoice(choice, this.#skillCheck);
     }
-    /** 첫 결말을 유지한 채 중반 도입으로 이동합니다. 길을 떠나기 전에 기력을 전부 회복합니다. */
+    /** 다음 막으로 이동하며 회복합니다. 왕도 진입 기록에서만 성장 상한을 열어 이전 전투를 보존합니다. */
     continueJourney() {
       if (!this.canContinue || this.isInCombat)
         throw new Error("지금은 다음 여정을 시작할 수 없습니다.");
+      const transition = CHAPTER_TRANSITIONS[this.#sceneId];
       this.#history.push({
         kind: "continue",
         scene: this.#sceneId,
-        label: "중반부로 여정을 이어간다",
+        label: transition.label,
         result: null
       });
+      if (transition.unlockGrowth) this.#character.unlockFinaleGrowth();
       this.#character.rest();
       this.#lastCheck = null;
-      this.#moveTo("road-oath");
+      this.#lastBattle = null;
+      this.#moveTo(transition.next);
     }
     /** 실제 플레이에 사용하는 전투 진입점. 저장 복구용 주사위와 구분해 현재 난수 생성기를 사용합니다. */
     performCombatAction(actionId) {
@@ -2801,6 +3504,10 @@ dialog > p:not(.eyebrow) {
     }
     /** 방문 선행 조건과 초반부 조사 횟수를 확인합니다. 일반 이동·전투는 별도 조건이 없으면 허용합니다. */
     #canChoose(choice) {
+      if (choice.unlessVisited && this.hasVisited(choice.unlessVisited))
+        return false;
+      if (choice.unlessClue && this.#clues.includes(choice.unlessClue))
+        return false;
       if (choice.requiresVisited && !this.hasVisited(choice.requiresVisited))
         return false;
       if (!choice.unvisited) return true;
@@ -3017,6 +3724,17 @@ dialog > p:not(.eyebrow) {
         "",
         "## 나의 선택"
       ];
+      if (adventure.isFinished) {
+        const summary = adventure.endingSummary;
+        lines.splice(
+          1,
+          0,
+          "",
+          `첫 서약: ${summary.firstOath}`,
+          `마지막 서약: ${summary.lastOath}`,
+          `전투 승리: ${summary.victories}회 · 책임 규명 증거: ${summary.evidence}/${summary.evidenceTotal}`
+        );
+      }
       for (const entry of adventure.history) {
         lines.push("", `### ${SCENES[entry.scene].title}`, entry.label);
         if (entry.result) {
@@ -3043,8 +3761,8 @@ dialog > p:not(.eyebrow) {
     if (className) element.className = className;
     return element;
   }
-  function downloadText(text, filename) {
-    const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  function downloadText(text, filename, mimeType = "text/markdown;charset=utf-8") {
+    const blob = new Blob([text], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = createElement("a");
     link.href = url;
@@ -3087,7 +3805,7 @@ dialog > p:not(.eyebrow) {
     #renderProgression(character) {
       const progress = character.experienceProgress;
       getElement("player-level").textContent = `Lv.${character.level}`;
-      getElement("experience-value").textContent = progress.required === null ? `최고 레벨 · 누적 ${character.experience} XP` : `${progress.current} / ${progress.required} XP`;
+      getElement("experience-value").textContent = progress.required === null ? `구간 최고 Lv.${character.levelCap} · ${character.experience} XP` : `${progress.current} / ${progress.required} XP`;
       getElement("experience-bar").style.width = progress.required === null ? "100%" : `${progress.current / progress.required * 100}%`;
     }
     /** 능력치 키를 한국어 이름으로 바꾸고 보정값 카드를 만듭니다. */
@@ -3112,24 +3830,50 @@ dialog > p:not(.eyebrow) {
     constructor(onChoose) {
       this.#onChoose = onChoose;
     }
-    /** 막·장소·본문·판정·선택지를 갱신합니다. 전투 중에는 긴 본문을 숨기고 첫 결말에만 계속하기를 표시합니다. */
+    /** 막·장소·본문·판정·선택지를 갱신합니다. 막 사이에는 계속하기, 완결에서는 결과 요약을 표시합니다. */
     render(adventure) {
       const scene = adventure.scene;
       getElement("location").textContent = scene.place;
-      getElement("act-label").textContent = adventure.isMidgame ? "제2막 · 별무덤" : "제1막 · 서리여울";
-      getElement("footer-chapter").textContent = adventure.isMidgame ? "제2막: 염로와 별무덤" : "제1막: 서리여울";
+      const act = ACT_PRESENTATION[adventure.actNumber];
+      getElement("act-label").textContent = act.label;
+      getElement("footer-chapter").textContent = act.footer;
+      getElement("scene-art").dataset.act = String(adventure.actNumber);
+      getElement("scene-art").setAttribute("aria-label", act.art);
       getElement("chapter").textContent = scene.chapter;
-      getElement("scene-number").textContent = `${String(adventure.choiceCount + 1).padStart(2, "0")} / ${adventure.isMidgame ? "II" : "I"}`;
+      getElement("scene-number").textContent = `${String(adventure.choiceCount + 1).padStart(2, "0")} / ${act.numeral}`;
       getElement("scene-title").textContent = scene.title;
       getElement("quote").textContent = scene.quote ?? "";
       getElement("quote").hidden = !scene.quote;
       getElement("ending-tools").hidden = !adventure.isComplete;
       getElement("continue-journey").hidden = !adventure.canContinue;
-      getElement("ending-note").textContent = adventure.canContinue ? "첫 번째 서약을 기억한 채, 전투와 성장이 기다리는 중반부로 이어집니다." : "중반부를 마쳤습니다. 모험 기록을 내려받아 다음 여정을 준비하세요.";
+      getElement("continue-journey").textContent = adventure.continuationLabel;
+      getElement("ending-note").textContent = adventure.isFinished ? "잿빛 서약 · 완결. 당신의 선택과 후일담을 모험 기록으로 남길 수 있습니다." : adventure.actNumber === 2 ? "증거를 지니고 왕도로 향하세요. 최종막에서는 Lv.8까지 성장할 수 있습니다." : "첫 번째 서약을 기억한 채, 전투와 성장이 기다리는 중반부로 이어집니다.";
+      this.#renderEndingSummary(adventure.endingSummary);
       getElement("prose").hidden = adventure.isInCombat;
       this.#renderProse(adventure);
       this.#renderCheck(adventure.lastCheck);
       this.#renderChoices(adventure);
+    }
+    /** 실제 플레이의 첫·마지막 서약, 전투 승리와 증거 수집량을 완결 화면에 남깁니다. */
+    #renderEndingSummary(summary) {
+      const container = getElement("ending-summary");
+      container.replaceChildren();
+      container.hidden = !summary;
+      if (!summary) return;
+      container.append(createElement("h3", "당신이 남긴 서약"));
+      const list = createElement("dl", void 0, "ending-statistics");
+      for (const [label, value] of [
+        ["첫 번째 서약", summary.firstOath],
+        ["마지막 서약", summary.lastOath],
+        ["최종 성장", `Lv.${summary.level} · ${summary.experience} XP`],
+        ["전투 승리", `${summary.victories}회`],
+        ["책임 규명 증거", `${summary.evidence} / ${summary.evidenceTotal}`]
+      ])
+        list.append(createElement("dt", label), createElement("dd", value));
+      container.append(
+        list,
+        createElement("p", "THE ASHEN OATH · 끝", "ending-credits")
+      );
     }
     /** 키보드·보조기술 사용자가 새 제목을 읽도록 초점만 옮깁니다. 스크롤은 여기서 바꾸지 않습니다. */
     focusHeading() {
@@ -3154,7 +3898,7 @@ dialog > p:not(.eyebrow) {
         prose.prepend(
           createElement(
             "div",
-            adventure.isMidgame ? "부상 · 야영지에서 휴식하고 다음 전투를 준비하세요." : "부상 · 몸은 지쳤지만 여정은 계속됩니다. 네라가 당신을 부축합니다.",
+            adventure.actNumber === 3 ? "부상 · 은신처나 확보한 통로에서 회복하고 다음 전투를 준비하세요." : adventure.isMidgame ? "부상 · 야영지에서 휴식하고 다음 전투를 준비하세요." : "부상 · 몸은 지쳤지만 여정은 계속됩니다. 네라가 당신을 부축합니다.",
             "wounded"
           )
         );
@@ -3343,12 +4087,12 @@ dialog > p:not(.eyebrow) {
         ),
         createElement(
           "h3",
-          adventure.isMidgame ? "기억의 운송장을 찾아서" : "사라진 이름을 찾아서",
+          adventure.actNumber === 3 ? "마지막 서약을 남기기" : adventure.isMidgame ? "기억의 운송장을 찾아서" : "사라진 이름을 찾아서",
           "quest-title"
         ),
         createElement(
           "p",
-          adventure.isMidgame ? "야영지에서 경험을 쌓고 별무덤 주조소를 조사해 제9보관소의 반출 증거를 확보하세요." : "새벽의 대봉헌이 시작되기 전, 침묵한 종과 사라진 주민들의 관계를 밝혀내세요.",
+          adventure.actNumber === 3 ? "왕도에서 증거를 모으고 강제 수집망을 멈추세요. 선택 조사는 후일담에 반영되며, 필수 증거만으로도 완결에 도달할 수 있습니다." : adventure.isMidgame ? "야영지에서 경험을 쌓고 별무덤 주조소를 조사해 제9보관소의 반출 증거를 확보하세요." : "새벽의 대봉헌이 시작되기 전, 침묵한 종과 사라진 주민들의 관계를 밝혀내세요.",
           "quest-desc"
         )
       );
@@ -3358,7 +4102,25 @@ dialog > p:not(.eyebrow) {
     /** 방문한 장면으로 목표 완료 여부를 계산합니다. 따로 완료 플래그를 저장하지 않아 진행과 어긋나지 않습니다. */
     #renderObjectives() {
       const adventure = this.#adventure;
-      const objectives = adventure.isMidgame ? [
+      const objectives = adventure.actNumber === 3 ? [
+        {
+          label: "등불 조합의 은신처 확보",
+          done: adventure.hasVisited("lantern-house")
+        },
+        {
+          label: "보관소의 실험 장부 보존",
+          done: adventure.clues.includes("제9보관소 실험 장부")
+        },
+        {
+          label: "왕관의 기계 정지",
+          done: adventure.hasVisited("breathing-vault")
+        },
+        {
+          label: "이름 없는 심장의 사슬 끊기",
+          done: adventure.hasVisited("last-oath")
+        },
+        { label: "마지막 서약과 후일담", done: adventure.isFinished }
+      ] : adventure.isMidgame ? [
         {
           label: "염로의 첫 전투에서 승리하기",
           done: adventure.hasVisited("road-trace")
@@ -3376,7 +4138,10 @@ dialog > p:not(.eyebrow) {
           done: adventure.sceneId === "act2-ending"
         }
       ] : [
-        { label: "서리여울에 도착하기", done: adventure.hasVisited("inn") },
+        {
+          label: "서리여울에 도착하기",
+          done: adventure.hasVisited("inn")
+        },
         {
           label: "사라진 이들의 흔적 찾기",
           done: adventure.hasVisited("crossroads")
@@ -3401,6 +4166,14 @@ dialog > p:not(.eyebrow) {
     /** 단서 개수와 목록을 표시합니다. 아직 없을 때는 빈 화면 대신 탐색 안내를 넣습니다. */
     #renderClues() {
       const clues = this.#adventure.clues;
+      if (this.#adventure.actNumber === 3)
+        this.#content.append(
+          createElement(
+            "p",
+            `왕도 증거 · ${this.#adventure.evidenceCount} / 3`,
+            "clue-heading"
+          )
+        );
       this.#content.append(
         createElement(
           "p",
@@ -3553,7 +4326,7 @@ dialog > p:not(.eyebrow) {
     #renderOutcome(battle) {
       const labels = {
         victory: "승리",
-        defeat: "패배 · 야영지에서 회복하세요",
+        defeat: "패배 · 휴식 후 재도전하세요",
         escaped: "후퇴 완료"
       };
       this.#panel.append(
@@ -3595,12 +4368,15 @@ dialog > p:not(.eyebrow) {
     #combatView;
     // 경고 확인을 기다리는 전투 시작 함수. 취소·실행 후 비워 오래된 요청이 남지 않게 합니다.
     #pendingEncounter = null;
+    // 파일 내용이 검증되어도 확인 전에는 현재 진행을 교체하지 않습니다.
+    #pendingSaveImport = null;
     // HTML dialog 요소를 한곳에서 참조합니다. showModal은 배경 조작을 잠급니다.
     #dialogs = {
       origin: getElement("origin-dialog"),
       help: getElement("help-dialog"),
       restart: getElement("restart-dialog"),
-      encounter: getElement("encounter-dialog")
+      encounter: getElement("encounter-dialog"),
+      saveImport: getElement("save-import-dialog")
     };
     /** 컨트롤러 콜백을 각 화면과 버튼에 연결합니다. 각 하위 View는 자신의 DOM 영역만 갱신합니다. */
     constructor({
@@ -3609,7 +4385,9 @@ dialog > p:not(.eyebrow) {
       onRestart,
       onExport,
       onContinue,
-      onCombatAction
+      onCombatAction,
+      onBackupSave,
+      onImportSave
     }) {
       this.#storyView = new StoryView(onChoose);
       this.#combatView = new CombatView(onCombatAction);
@@ -3618,9 +4396,11 @@ dialog > p:not(.eyebrow) {
       getElement("export").addEventListener("click", onExport);
       getElement("continue-journey").addEventListener("click", onContinue);
       this.#bindEncounterDialog();
+      this.#bindSaveControls(onBackupSave, onImportSave);
     }
     /** 모든 패널을 같은 모험 상태로 갱신하고 저장 상태를 표시합니다. 전투 중에는 전투 제목으로 초점을 옮깁니다. */
     render(adventure, storageAvailable, { focusScene = false } = {}) {
+      getElement("save-message").hidden = true;
       this.#characterView.render(adventure);
       this.#storyView.render(adventure);
       this.#journalView.render(adventure);
@@ -3631,6 +4411,57 @@ dialog > p:not(.eyebrow) {
           this.#combatView.focus();
         else this.#storyView.scrollToScene();
       }
+    }
+    /** 큰 파일과 읽기 실패를 처리합니다. JSON과 게임 기록의 검증은 컨트롤러에 위임합니다. */
+    #bindSaveControls(onBackupSave, onImportSave) {
+      const input = getElement("save-file");
+      getElement("backup-save").addEventListener("click", onBackupSave);
+      getElement("load-save").addEventListener("click", () => input.click());
+      input.addEventListener("change", async () => {
+        const file = input.files[0];
+        input.value = "";
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          this.showSaveError("진행 파일은 5MB 이하의 JSON이어야 합니다.");
+          return;
+        }
+        try {
+          onImportSave(await file.text());
+        } catch {
+          this.showSaveError(
+            "파일을 읽을 수 없습니다. 현재 모험은 그대로 유지했습니다."
+          );
+        }
+      });
+      getElement("cancel-import").addEventListener("click", () => {
+        this.#pendingSaveImport = null;
+        this.#dialogs.saveImport.close();
+      });
+      this.#dialogs.saveImport.addEventListener("cancel", () => {
+        this.#pendingSaveImport = null;
+      });
+      getElement("confirm-import").addEventListener("click", () => {
+        const confirm = this.#pendingSaveImport;
+        this.#pendingSaveImport = null;
+        this.#dialogs.saveImport.close();
+        confirm?.();
+      });
+    }
+    /** 검증된 기록의 위치를 보여주고 현재 진행을 덮어쓰기 전에 확인합니다. */
+    confirmSaveImport(adventure, onConfirm) {
+      this.#pendingSaveImport = onConfirm;
+      getElement("import-description").textContent = `${adventure.character.origin.name} · Lv.${adventure.character.level} · ${adventure.scene.title}. 현재 진행이 이 기록으로 교체됩니다.`;
+      this.#dialogs.saveImport.showModal();
+    }
+    /** 오류 메시지는 텍스트로만 넣고 현재 화면의 게임 상태를 보존합니다. */
+    showSaveError(message) {
+      const container = getElement("save-message");
+      container.textContent = message;
+      container.hidden = false;
+    }
+    /** 기계가 복구할 수 있는 JSON이며, 읽기용 Markdown 기록과 구분합니다. */
+    exportSave(json) {
+      downloadText(json, "잿빛-서약-진행.json", "application/json;charset=utf-8");
     }
     /** 실제 전투는 시작하지 않고 경고·보상을 표시합니다. onConfirm은 확인 버튼을 눌러야 실행됩니다. */
     confirmEncounter(preview, onConfirm) {
@@ -3738,7 +4569,9 @@ dialog > p:not(.eyebrow) {
         onRestart: () => this.#restart(),
         onExport: () => this.#exportJournal(),
         onContinue: () => this.#continueJourney(),
-        onCombatAction: (actionId) => this.#combatAction(actionId)
+        onCombatAction: (actionId) => this.#combatAction(actionId),
+        onBackupSave: () => this.#backupSave(),
+        onImportSave: (raw) => this.#prepareImport(raw)
       });
     }
     /** 저장 기록이 있으면 복구하고, 없으면 기본 출신으로 새 모험을 만듭니다. 처음 시작할 때만 출신 선택창을 엽니다. */
@@ -3768,7 +4601,7 @@ dialog > p:not(.eyebrow) {
       this.#adventure.choose(choiceId, { acceptLevelMismatch });
       this.#saveAndRender({ focusScene: true });
     }
-    /** 첫 결말에서 중반부를 시작하고 그 결과를 즉시 저장합니다. */
+    /** 막 사이를 이동하고 새 구간의 성장 상한을 포함해 즉시 저장합니다. */
     #continueJourney() {
       this.#adventure.continueJourney();
       this.#saveAndRender({ focusScene: true });
@@ -3795,6 +4628,27 @@ dialog > p:not(.eyebrow) {
       this.#gameView.exportJournal(
         this.#journalExporter.toMarkdown(this.#adventure)
       );
+    }
+    /** 실행 파일 교체나 다른 브라우저로의 이동에 사용할 JSON 백업을 만듭니다. */
+    #backupSave() {
+      this.#gameView.exportSave(
+        JSON.stringify(this.#adventure.toSnapshot(), null, 2)
+      );
+    }
+    /** 입력 기록을 먼저 검증하고, 사용자가 확인했을 때만 현재 진행을 교체합니다. */
+    #prepareImport(raw) {
+      const restored = SaveRepository.decode(raw);
+      if (!restored) {
+        this.#gameView.showSaveError(
+          "유효한 진행 파일이 아닙니다. 현재 모험은 그대로 유지했습니다."
+        );
+        return;
+      }
+      this.#gameView.confirmSaveImport(restored, () => {
+        this.#adventure = restored;
+        this.#gameView.resetJournal();
+        this.#saveAndRender({ focusScene: true });
+      });
     }
     /** 게임 변경 뒤의 공통 순서입니다. 저장 성공 여부도 화면에 전달하도록 저장을 먼저 시도합니다. */
     #saveAndRender(options) {

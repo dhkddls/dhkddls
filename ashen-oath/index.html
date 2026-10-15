@@ -29,8 +29,8 @@
           <h1>잊힌 이름에도<br />이야기는 남는다.</h1>
         </div>
         <p class="intro-copy">
-          한 사람의 여행자, 스무 면의 주사위.<br />당신의 선택으로 쓰는 변경의
-          첫 번째 밤과 그 너머의 여정.
+          한 사람의 여행자, 스무 면의 주사위.<br />서리여울의 첫 밤에서 왕도의
+          마지막 서약까지, 당신의 선택으로.
         </p>
       </section>
       <!-- 큰 화면은 캐릭터·모험·기록서의 세 열, 작은 화면은 CSS 미디어 쿼리로 재배치합니다. -->
@@ -71,6 +71,7 @@
         <!-- 이야기·판정·전투·선택지를 담는 중앙 영역입니다. -->
         <section class="adventure" aria-label="모험 본문">
           <div
+            id="scene-art"
             class="scene-art"
             role="img"
             aria-label="별 아래 서 있는 서리여울의 종탑과 안개에 잠긴 중세 마을"
@@ -187,11 +188,17 @@
             ></section>
             <!-- 가능한 선택지만 StoryView가 버튼으로 생성합니다. 실제 허용 여부는 Adventure도 다시 검사합니다. -->
             <div id="choices" class="choices"></div>
-            <!-- 막 종료 때만 표시합니다. 첫 결말은 내보내기와 중반 계속하기, 중반 종료는 내보내기만 가능합니다. -->
+            <!-- 막 종료에는 계속하기, 캠페인 완결에는 결과 요약과 내보내기를 표시합니다. -->
             <div id="ending-tools" hidden>
               <p id="ending-note" class="ending-note">
                 첫 번째 모험이 끝났습니다. 이 선택은 더 큰 이야기의 시작입니다.
               </p>
+              <section
+                id="ending-summary"
+                class="ending-summary"
+                aria-label="게임 완료 요약"
+                hidden
+              ></section>
               <button id="export" class="primary">모험 기록 내려받기 ↓</button>
               <button id="continue-journey" class="primary" hidden>
                 중반부로 떠나기 →
@@ -200,9 +207,21 @@
           </div>
           <!-- 저장 상태와 다시 시작. 저장 권한이 없어도 게임을 계속할 수 있으며 여기에서 상태를 알립니다. -->
           <footer class="story-footer">
-            <span>✧ <span id="save-status">선택할 때마다 자동 저장</span></span
-            ><button id="restart" class="quiet">처음부터 다시</button>
+            <span>✧ <span id="save-status">선택할 때마다 자동 저장</span></span>
+            <div class="save-actions">
+              <button id="backup-save" class="quiet">진행 백업</button
+              ><button id="load-save" class="quiet">불러오기</button
+              ><button id="restart" class="quiet">처음부터 다시</button>
+            </div>
+            <input
+              id="save-file"
+              type="file"
+              accept=".json,application/json"
+              aria-label="진행 파일 선택"
+              hidden
+            />
           </footer>
+          <p id="save-message" class="save-message" role="alert" hidden></p>
         </section>
         <!-- JournalView 영역. tablist/tab/tabpanel 역할은 키보드와 보조기술이 탭 구조를 이해하도록 합니다. -->
         <aside class="journal-panel">
@@ -305,9 +324,19 @@
       </p>
       <p>
         공격·결정타·응급 처치·후퇴를 선택할 수 있습니다. 패배와 후퇴는 경험치가
-        없으며, 패배하면 기력 1로 야영지에 돌아옵니다. 야영지의 휴식은 기력을
-        전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대 기력과 능력치가
-        증가합니다.
+        없으며, 패배하면 기력 1로 안전한 거점이나 확보한 통로에 돌아옵니다.
+        휴식은 기력을 전부 회복합니다. 레벨업할 때도 기력을 전부 회복하며 최대
+        기력과 능력치가 증가합니다.
+      </p>
+      <p>
+        중반부를 마치면 왕도에서 Lv.8까지 성장할 수 있습니다. 조사와 두 단계
+        최종 보스를 지나 마지막 서약과 후일담으로 완결됩니다. 보스 사이에도
+        회복하고 훈련할 수 있습니다.
+      </p>
+      <p>
+        「진행 백업」으로 JSON을 내려받고 「불러오기」로 이어갈 수 있습니다.
+        현재 진행을 교체하기 전에 확인하며, 잘못된 파일은 진행을 바꾸지
+        않습니다. Markdown 모험 기록은 읽기용이며 불러올 수 없습니다.
       </p>
     </dialog>
     <!-- 초기화 확인. 취소하면 그대로 두고 확인 버튼만 새 모험을 요청합니다. -->
@@ -334,6 +363,19 @@
         ><button id="confirm-encounter" class="primary">
           확인하고 전투 시작
         </button>
+      </div>
+    </dialog>
+    <!-- 백업을 읽어도 사용자가 확인해야 현재 진행을 교체합니다. 취소·Esc는 상태를 바꾸지 않습니다. -->
+    <dialog
+      id="save-import-dialog"
+      aria-labelledby="import-title"
+      aria-describedby="import-description"
+    >
+      <h2 id="import-title">저장한 여정을 불러올까요?</h2>
+      <p id="import-description"></p>
+      <div class="dialog-actions">
+        <button id="cancel-import" class="quiet">현재 여정 유지</button
+        ><button id="confirm-import" class="primary">이 기록 불러오기</button>
       </div>
     </dialog>
     <!-- 정적 HTML 요소 뒤에서 실행합니다. ES 모듈은 HTTP 서버로 제공해야 하며 app.mjs가 전체 앱을 시작합니다. -->

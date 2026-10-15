@@ -1084,7 +1084,67 @@ dialog > p:not(.eyebrow) {
   }
 }
 
-/* 성장과 전투는 기존 기록서 색상과 동일한 팔레트를 사용합니다. */
+/* 최종막은 같은 SVG를 옅은 청색으로 바꾸어 왕도 도착을 구분합니다. */
+.scene-art[data-act="3"] svg {
+  filter: hue-rotate(18deg) saturate(0.7);
+}
+.ending-summary {
+  padding: 20px;
+  border: 1px solid var(--gold);
+  background: #222c20;
+  margin: 20px 0;
+}
+.ending-summary h3 {
+  font: 21px/1.6 var(--serif);
+  font-weight: 400;
+  color: var(--gold);
+  margin-top: 0;
+}
+.ending-statistics {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 12px;
+}
+.ending-statistics dt {
+  color: var(--muted);
+}
+.ending-statistics dd {
+  margin: 0;
+  color: #e0ddc5;
+  overflow-wrap: anywhere;
+}
+.ending-credits {
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.story-footer {
+  flex-wrap: wrap;
+}
+.save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.save-message {
+  color: #dfb898;
+  font-size: 12px;
+  padding: 8px 20px;
+}
+@media (max-width: 620px) {
+  .ending-summary {
+    padding: 14px;
+  }
+  .ending-statistics {
+    grid-template-columns: 90px minmax(0, 1fr);
+    gap: 10px;
+    font-size: 11px;
+  }
+}
 /* 레벨·경험치 영역. 기력 막대와 별도로 성장 진행을 표시합니다. */
 .progression {
   margin-top: 20px;

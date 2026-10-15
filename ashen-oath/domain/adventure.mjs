@@ -12,6 +12,8 @@ import { Character } from "./character.mjs";
 import { SkillCheck } from "./skill-check.mjs";
 import { CombatSession } from "./combat-session.mjs";
 import { ExperiencePolicy } from "./experience-policy.mjs";
+import { CampaignResolution } from "./campaign-resolution.mjs";
+import { CHAPTER_TRANSITIONS, FINAL_EVIDENCE } from "../data/campaign.mjs";
 
 // 초반부의 조사 장소만 횟수 제한에 포함합니다. 중반부 반복 전투와 구분합니다.
 const INVESTIGATION_SCENES = ["chapel", "archive", "river"];
@@ -57,9 +59,22 @@ export class Adventure {
   get sceneId() {
     return this.#sceneId;
   }
-  /** 현재 장면 데이터를 읽습니다. 중반 도입부만 첫 결말에 맞는 문장을 새 객체에 덧붙입니다. */
+  /** 도입에는 첫 결말의 동기를, 완결에는 실제 선택·증거·출신에 맞는 후일담을 붙입니다. */
   get scene() {
     const scene = SCENES[this.#sceneId];
+    if (scene.final) {
+      return {
+        ...scene,
+        paragraphs: [
+          ...scene.paragraphs,
+          ...CampaignResolution.epilogue({
+            firstEnding: this.firstEnding,
+            clues: this.clues,
+            originId: this.#character.originId,
+          }),
+        ],
+      };
+    }
     if (this.#sceneId !== "road-oath") return scene;
     const firstEnding = this.#visited.find((sceneId) =>
       Object.hasOwn(JOURNEY_ROUTES, sceneId),
@@ -73,9 +88,46 @@ export class Adventure {
   get isComplete() {
     return Boolean(this.scene.ending);
   }
-  /** 첫 결말 세 종류에서만 중반부로 이어갈 수 있습니다. 중반 종료에는 다음 막이 아직 없습니다. */
+  /** 막 종료와 전체 완결을 구분합니다. 중반 종료에서도 왕도로 이어갈 수 있습니다. */
   get canContinue() {
-    return Object.hasOwn(JOURNEY_ROUTES, this.#sceneId);
+    return Object.hasOwn(CHAPTER_TRANSITIONS, this.#sceneId);
+  }
+  /** UI가 추측하지 않고 실제 다음 막의 이름을 표시하도록 합니다. */
+  get continuationLabel() {
+    return CHAPTER_TRANSITIONS[this.#sceneId]?.button ?? "";
+  }
+  /** 완결 장면에는 더 진행하는 버튼이나 선택지가 없습니다. */
+  get isFinished() {
+    return Boolean(SCENES[this.#sceneId].final);
+  }
+  /** 현재 막 번호입니다. 방문 이력으로 계산하므로 지름길과 후퇴에도 유지됩니다. */
+  get actNumber() {
+    return this.hasVisited("capital-gate") ? 3 : this.isMidgame ? 2 : 1;
+  }
+  /** 처음 선택한 서약을 완결 후에도 보존합니다. */
+  get firstEnding() {
+    return this.#visited.find((sceneId) =>
+      Object.hasOwn(JOURNEY_ROUTES, sceneId),
+    );
+  }
+  /** 최종막 선택 조사의 진행량입니다. 수집을 마치지 않아도 모든 최종 서약을 선택할 수 있습니다. */
+  get evidenceCount() {
+    return CampaignResolution.evidenceCount(this.#clues);
+  }
+  /** 결말 화면과 내보내기에 사용하는 실제 플레이 요약입니다. */
+  get endingSummary() {
+    if (!this.isFinished) return null;
+    return {
+      firstOath: SCENES[this.firstEnding].title,
+      lastOath: this.scene.title,
+      level: this.#character.level,
+      experience: this.#character.experience,
+      victories: this.#history.filter(
+        (entry) => entry.kind === "combat" && entry.combat.status === "victory",
+      ).length,
+      evidence: this.evidenceCount,
+      evidenceTotal: FINAL_EVIDENCE.length,
+    };
   }
   /** 중반 도입부를 방문했는지로 현재 막을 구분합니다. 반복해서 야영지로 돌아가도 유지됩니다. */
   get isMidgame() {
@@ -153,19 +205,22 @@ export class Adventure {
     this.#applyChoice(choice, this.#skillCheck);
   }
 
-  /** 첫 결말을 유지한 채 중반 도입으로 이동합니다. 길을 떠나기 전에 기력을 전부 회복합니다. */
+  /** 다음 막으로 이동하며 회복합니다. 왕도 진입 기록에서만 성장 상한을 열어 이전 전투를 보존합니다. */
   continueJourney() {
     if (!this.canContinue || this.isInCombat)
       throw new Error("지금은 다음 여정을 시작할 수 없습니다.");
+    const transition = CHAPTER_TRANSITIONS[this.#sceneId];
     this.#history.push({
       kind: "continue",
       scene: this.#sceneId,
-      label: "중반부로 여정을 이어간다",
+      label: transition.label,
       result: null,
     });
+    if (transition.unlockGrowth) this.#character.unlockFinaleGrowth();
     this.#character.rest();
     this.#lastCheck = null;
-    this.#moveTo("road-oath");
+    this.#lastBattle = null;
+    this.#moveTo(transition.next);
   }
 
   /** 실제 플레이에 사용하는 전투 진입점. 저장 복구용 주사위와 구분해 현재 난수 생성기를 사용합니다. */
@@ -225,6 +280,10 @@ export class Adventure {
 
   /** 방문 선행 조건과 초반부 조사 횟수를 확인합니다. 일반 이동·전투는 별도 조건이 없으면 허용합니다. */
   #canChoose(choice) {
+    if (choice.unlessVisited && this.hasVisited(choice.unlessVisited))
+      return false;
+    if (choice.unlessClue && this.#clues.includes(choice.unlessClue))
+      return false;
     if (choice.requiresVisited && !this.hasVisited(choice.requiresVisited))
       return false;
     if (!choice.unvisited) return true;

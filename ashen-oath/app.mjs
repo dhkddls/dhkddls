@@ -36,6 +36,8 @@ class GameApplication {
       onExport: () => this.#exportJournal(),
       onContinue: () => this.#continueJourney(),
       onCombatAction: (actionId) => this.#combatAction(actionId),
+      onBackupSave: () => this.#backupSave(),
+      onImportSave: (raw) => this.#prepareImport(raw),
     });
   }
 
@@ -70,7 +72,7 @@ class GameApplication {
     this.#saveAndRender({ focusScene: true });
   }
 
-  /** 첫 결말에서 중반부를 시작하고 그 결과를 즉시 저장합니다. */
+  /** 막 사이를 이동하고 새 구간의 성장 상한을 포함해 즉시 저장합니다. */
   #continueJourney() {
     this.#adventure.continueJourney();
     this.#saveAndRender({ focusScene: true });
@@ -101,6 +103,29 @@ class GameApplication {
     this.#gameView.exportJournal(
       this.#journalExporter.toMarkdown(this.#adventure),
     );
+  }
+
+  /** 실행 파일 교체나 다른 브라우저로의 이동에 사용할 JSON 백업을 만듭니다. */
+  #backupSave() {
+    this.#gameView.exportSave(
+      JSON.stringify(this.#adventure.toSnapshot(), null, 2),
+    );
+  }
+
+  /** 입력 기록을 먼저 검증하고, 사용자가 확인했을 때만 현재 진행을 교체합니다. */
+  #prepareImport(raw) {
+    const restored = SaveRepository.decode(raw);
+    if (!restored) {
+      this.#gameView.showSaveError(
+        "유효한 진행 파일이 아닙니다. 현재 모험은 그대로 유지했습니다.",
+      );
+      return;
+    }
+    this.#gameView.confirmSaveImport(restored, () => {
+      this.#adventure = restored;
+      this.#gameView.resetJournal();
+      this.#saveAndRender({ focusScene: true });
+    });
   }
 
   /** 게임 변경 뒤의 공통 순서입니다. 저장 성공 여부도 화면에 전달하도록 저장을 먼저 시도합니다. */

@@ -20,6 +20,8 @@ export class Character {
   #items;
   // 레벨업 시 차감하지 않는 전체 누적 경험치입니다.
   #experience = 0;
+  // 이전 v2 저장은 Lv.5 계산을 그대로 재생합니다. 왕도 진입 기록에서만 Lv.8을 엽니다.
+  #levelCap = 5;
 
   /** 등록된 출신만 허용하고 해당 출신의 시작 소지품을 지급합니다. */
   constructor(originId = "warden") {
@@ -51,7 +53,7 @@ export class Character {
 
   /** 누적 경험치로 현재 레벨을 계산합니다. 별도 레벨 필드를 저장해 불일치를 만들지 않습니다. */
   get level() {
-    return ExperiencePolicy.levelFor(this.#experience);
+    return ExperiencePolicy.levelFor(this.#experience, this.#levelCap);
   }
   /** 전체 모험에서 획득한 누적 경험치입니다. 레벨업해도 차감하지 않습니다. */
   get experience() {
@@ -59,7 +61,16 @@ export class Character {
   }
   /** 경험치 막대용 현재 구간 수치입니다. 최고 레벨이면 required가 null입니다. */
   get experienceProgress() {
-    return ExperiencePolicy.progress(this.#experience);
+    return ExperiencePolicy.progress(this.#experience, this.#levelCap);
+  }
+  /** 현재 막에서 허용하는 성장 상한입니다. 누적 경험치는 상한 이후에도 보존합니다. */
+  get levelCap() {
+    return this.#levelCap;
+  }
+
+  /** 왕도 진입 때만 상한을 엽니다. 이전 전투의 피해·보상 계산을 소급 변경하지 않습니다. */
+  unlockFinaleGrowth() {
+    this.#levelCap = ExperiencePolicy.MAX_LEVEL;
   }
   /** Lv.1은 10이며 레벨마다 최대 기력이 4씩 증가합니다. */
   get maxHealth() {
@@ -136,6 +147,7 @@ export class Character {
     character.#health = this.#health;
     character.#items = [...this.#items];
     character.#experience = this.#experience;
+    character.#levelCap = this.#levelCap;
     return character;
   }
 }

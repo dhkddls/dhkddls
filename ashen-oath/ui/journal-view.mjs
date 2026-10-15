@@ -95,14 +95,20 @@ export class JournalView {
       ),
       createElement(
         "h3",
-        adventure.isMidgame ? "기억의 운송장을 찾아서" : "사라진 이름을 찾아서",
+        adventure.actNumber === 3
+          ? "마지막 서약을 남기기"
+          : adventure.isMidgame
+            ? "기억의 운송장을 찾아서"
+            : "사라진 이름을 찾아서",
         "quest-title",
       ),
       createElement(
         "p",
-        adventure.isMidgame
-          ? "야영지에서 경험을 쌓고 별무덤 주조소를 조사해 제9보관소의 반출 증거를 확보하세요."
-          : "새벽의 대봉헌이 시작되기 전, 침묵한 종과 사라진 주민들의 관계를 밝혀내세요.",
+        adventure.actNumber === 3
+          ? "왕도에서 증거를 모으고 강제 수집망을 멈추세요. 선택 조사는 후일담에 반영되며, 필수 증거만으로도 완결에 도달할 수 있습니다."
+          : adventure.isMidgame
+            ? "야영지에서 경험을 쌓고 별무덤 주조소를 조사해 제9보관소의 반출 증거를 확보하세요."
+            : "새벽의 대봉헌이 시작되기 전, 침묵한 종과 사라진 주민들의 관계를 밝혀내세요.",
         "quest-desc",
       ),
     );
@@ -113,37 +119,61 @@ export class JournalView {
   /** 방문한 장면으로 목표 완료 여부를 계산합니다. 따로 완료 플래그를 저장하지 않아 진행과 어긋나지 않습니다. */
   #renderObjectives() {
     const adventure = this.#adventure;
-    const objectives = adventure.isMidgame
-      ? [
-          {
-            label: "염로의 첫 전투에서 승리하기",
-            done: adventure.hasVisited("road-trace"),
-          },
-          {
-            label: "밀랍 파수병을 넘어 기록실 조사",
-            done: adventure.hasVisited("foundry-truth"),
-          },
-          {
-            label: "제9보관소의 출고 명령 확보",
-            done: adventure.hasVisited("vault-door"),
-          },
-          {
-            label: "문지기를 멈추고 기억 용기 보호",
-            done: adventure.sceneId === "act2-ending",
-          },
-        ]
-      : [
-          { label: "서리여울에 도착하기", done: adventure.hasVisited("inn") },
-          {
-            label: "사라진 이들의 흔적 찾기",
-            done: adventure.hasVisited("crossroads"),
-          },
-          {
-            label: "종 아래의 진실 마주하기",
-            done: adventure.hasVisited("heart"),
-          },
-          { label: "첫 번째 서약 선택하기", done: adventure.isComplete },
-        ];
+    const objectives =
+      adventure.actNumber === 3
+        ? [
+            {
+              label: "등불 조합의 은신처 확보",
+              done: adventure.hasVisited("lantern-house"),
+            },
+            {
+              label: "보관소의 실험 장부 보존",
+              done: adventure.clues.includes("제9보관소 실험 장부"),
+            },
+            {
+              label: "왕관의 기계 정지",
+              done: adventure.hasVisited("breathing-vault"),
+            },
+            {
+              label: "이름 없는 심장의 사슬 끊기",
+              done: adventure.hasVisited("last-oath"),
+            },
+            { label: "마지막 서약과 후일담", done: adventure.isFinished },
+          ]
+        : adventure.isMidgame
+          ? [
+              {
+                label: "염로의 첫 전투에서 승리하기",
+                done: adventure.hasVisited("road-trace"),
+              },
+              {
+                label: "밀랍 파수병을 넘어 기록실 조사",
+                done: adventure.hasVisited("foundry-truth"),
+              },
+              {
+                label: "제9보관소의 출고 명령 확보",
+                done: adventure.hasVisited("vault-door"),
+              },
+              {
+                label: "문지기를 멈추고 기억 용기 보호",
+                done: adventure.sceneId === "act2-ending",
+              },
+            ]
+          : [
+              {
+                label: "서리여울에 도착하기",
+                done: adventure.hasVisited("inn"),
+              },
+              {
+                label: "사라진 이들의 흔적 찾기",
+                done: adventure.hasVisited("crossroads"),
+              },
+              {
+                label: "종 아래의 진실 마주하기",
+                done: adventure.hasVisited("heart"),
+              },
+              { label: "첫 번째 서약 선택하기", done: adventure.isComplete },
+            ];
     const list = createElement("ul", undefined, "objectives");
     for (const objective of objectives) {
       const item = createElement("li");
@@ -159,6 +189,14 @@ export class JournalView {
   /** 단서 개수와 목록을 표시합니다. 아직 없을 때는 빈 화면 대신 탐색 안내를 넣습니다. */
   #renderClues() {
     const clues = this.#adventure.clues;
+    if (this.#adventure.actNumber === 3)
+      this.#content.append(
+        createElement(
+          "p",
+          `왕도 증거 · ${this.#adventure.evidenceCount} / 3`,
+          "clue-heading",
+        ),
+      );
     this.#content.append(
       createElement(
         "p",

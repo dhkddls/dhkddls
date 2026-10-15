@@ -4,6 +4,7 @@
  */
 
 import { STAT_NAMES } from "../data/origins.mjs";
+import { ACT_PRESENTATION } from "../data/campaign.mjs";
 import { createElement, getElement } from "./dom.mjs";
 
 export class StoryView {
@@ -15,31 +16,56 @@ export class StoryView {
     this.#onChoose = onChoose;
   }
 
-  /** 막·장소·본문·판정·선택지를 갱신합니다. 전투 중에는 긴 본문을 숨기고 첫 결말에만 계속하기를 표시합니다. */
+  /** 막·장소·본문·판정·선택지를 갱신합니다. 막 사이에는 계속하기, 완결에서는 결과 요약을 표시합니다. */
   render(adventure) {
     const scene = adventure.scene;
     getElement("location").textContent = scene.place;
-    getElement("act-label").textContent = adventure.isMidgame
-      ? "제2막 · 별무덤"
-      : "제1막 · 서리여울";
-    getElement("footer-chapter").textContent = adventure.isMidgame
-      ? "제2막: 염로와 별무덤"
-      : "제1막: 서리여울";
+    const act = ACT_PRESENTATION[adventure.actNumber];
+    getElement("act-label").textContent = act.label;
+    getElement("footer-chapter").textContent = act.footer;
+    getElement("scene-art").dataset.act = String(adventure.actNumber);
+    getElement("scene-art").setAttribute("aria-label", act.art);
     getElement("chapter").textContent = scene.chapter;
     getElement("scene-number").textContent =
-      `${String(adventure.choiceCount + 1).padStart(2, "0")} / ${adventure.isMidgame ? "II" : "I"}`;
+      `${String(adventure.choiceCount + 1).padStart(2, "0")} / ${act.numeral}`;
     getElement("scene-title").textContent = scene.title;
     getElement("quote").textContent = scene.quote ?? "";
     getElement("quote").hidden = !scene.quote;
     getElement("ending-tools").hidden = !adventure.isComplete;
     getElement("continue-journey").hidden = !adventure.canContinue;
-    getElement("ending-note").textContent = adventure.canContinue
-      ? "첫 번째 서약을 기억한 채, 전투와 성장이 기다리는 중반부로 이어집니다."
-      : "중반부를 마쳤습니다. 모험 기록을 내려받아 다음 여정을 준비하세요.";
+    getElement("continue-journey").textContent = adventure.continuationLabel;
+    getElement("ending-note").textContent = adventure.isFinished
+      ? "잿빛 서약 · 완결. 당신의 선택과 후일담을 모험 기록으로 남길 수 있습니다."
+      : adventure.actNumber === 2
+        ? "증거를 지니고 왕도로 향하세요. 최종막에서는 Lv.8까지 성장할 수 있습니다."
+        : "첫 번째 서약을 기억한 채, 전투와 성장이 기다리는 중반부로 이어집니다.";
+    this.#renderEndingSummary(adventure.endingSummary);
     getElement("prose").hidden = adventure.isInCombat;
     this.#renderProse(adventure);
     this.#renderCheck(adventure.lastCheck);
     this.#renderChoices(adventure);
+  }
+
+  /** 실제 플레이의 첫·마지막 서약, 전투 승리와 증거 수집량을 완결 화면에 남깁니다. */
+  #renderEndingSummary(summary) {
+    const container = getElement("ending-summary");
+    container.replaceChildren();
+    container.hidden = !summary;
+    if (!summary) return;
+    container.append(createElement("h3", "당신이 남긴 서약"));
+    const list = createElement("dl", undefined, "ending-statistics");
+    for (const [label, value] of [
+      ["첫 번째 서약", summary.firstOath],
+      ["마지막 서약", summary.lastOath],
+      ["최종 성장", `Lv.${summary.level} · ${summary.experience} XP`],
+      ["전투 승리", `${summary.victories}회`],
+      ["책임 규명 증거", `${summary.evidence} / ${summary.evidenceTotal}`],
+    ])
+      list.append(createElement("dt", label), createElement("dd", value));
+    container.append(
+      list,
+      createElement("p", "THE ASHEN OATH · 끝", "ending-credits"),
+    );
   }
 
   /** 키보드·보조기술 사용자가 새 제목을 읽도록 초점만 옮깁니다. 스크롤은 여기서 바꾸지 않습니다. */
@@ -67,9 +93,11 @@ export class StoryView {
       prose.prepend(
         createElement(
           "div",
-          adventure.isMidgame
-            ? "부상 · 야영지에서 휴식하고 다음 전투를 준비하세요."
-            : "부상 · 몸은 지쳤지만 여정은 계속됩니다. 네라가 당신을 부축합니다.",
+          adventure.actNumber === 3
+            ? "부상 · 은신처나 확보한 통로에서 회복하고 다음 전투를 준비하세요."
+            : adventure.isMidgame
+              ? "부상 · 야영지에서 휴식하고 다음 전투를 준비하세요."
+              : "부상 · 몸은 지쳤지만 여정은 계속됩니다. 네라가 당신을 부축합니다.",
           "wounded",
         ),
       );

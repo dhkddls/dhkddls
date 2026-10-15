@@ -24,6 +24,17 @@ export class JournalExporter {
       "",
       "## 나의 선택",
     ];
+    if (adventure.isFinished) {
+      const summary = adventure.endingSummary;
+      lines.splice(
+        1,
+        0,
+        "",
+        `첫 서약: ${summary.firstOath}`,
+        `마지막 서약: ${summary.lastOath}`,
+        `전투 승리: ${summary.victories}회 · 책임 규명 증거: ${summary.evidence}/${summary.evidenceTotal}`,
+      );
+    }
     for (const entry of adventure.history) {
       lines.push("", `### ${SCENES[entry.scene].title}`, entry.label);
       if (entry.result) {

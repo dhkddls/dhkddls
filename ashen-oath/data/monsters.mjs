@@ -72,6 +72,84 @@ export const MONSTERS = {
     description:
       "기억을 운반하는 종 껍데기로 만든 수호체. 은심을 끊으면 붙들린 기억을 다치게 하지 않고 멈출 수 있다.",
   },
+  // 왕도 반복 전투. 수치는 고정되어 성장 이후에는 경험치 증가 규칙이 적용됩니다.
+  "wax-envoy": {
+    id: "wax-envoy",
+    defeatText:
+      "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+    retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+    name: "밀랍 운반체",
+    level: 4,
+    health: 26,
+    defense: 13,
+    attack: 4,
+    damage: 5,
+    experience: 160,
+    description:
+      "기억 용기를 옮기는 빈 수레와 갑옷의 결합체. 은사슬만 끊으면 안의 용기는 무사하다.",
+  },
+  "silent-bailiff": {
+    id: "silent-bailiff",
+    defeatText:
+      "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+    retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+    name: "침묵 집행관",
+    level: 5,
+    health: 32,
+    defense: 14,
+    attack: 5,
+    damage: 6,
+    experience: 200,
+    description:
+      "사람의 자리를 대신한 법원 경비 장치. 명부에 없는 이를 모두 침입자로 처리한다.",
+  },
+  "vault-marshal": {
+    id: "vault-marshal",
+    defeatText:
+      "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+    retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+    name: "보관소 외곽 수호체",
+    level: 6,
+    health: 38,
+    defense: 15,
+    attack: 6,
+    damage: 7,
+    experience: 240,
+    description:
+      "제9보관소의 순찰 장치. 살아 있는 경비병이 아니라 반출 명령으로 움직이는 빈 갑옷이다.",
+  },
+  // 두 단계 보스는 각각 다른 장면에서 정산하여 첫 단계 재보상 없이 재도전할 수 있습니다.
+  "crown-engine": {
+    id: "crown-engine",
+    defeatText:
+      "리안과 구조대가 당신을 은신처로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+    retreatText: "확보한 통로로 은신처에 돌아왔다. 경험치는 얻지 못했다.",
+    name: "왕관의 기계",
+    level: 7,
+    health: 48,
+    defense: 16,
+    attack: 6,
+    damage: 8,
+    experience: 260,
+    description:
+      "일곱 은심을 강제로 하나의 이름에 묶는 중앙 장치. 바깥 봉인륜을 부수면 수집망이 끊긴다.",
+  },
+  "unwritten-heart": {
+    id: "unwritten-heart",
+    defeatText:
+      "구조대가 당신을 안정된 중앙 통로로 옮겼다. 경험치 없이 기력 1로 돌아왔다.",
+    retreatText:
+      "안정된 중앙 통로까지 물러났다. 첫 방어층은 다시 생기지 않는다. 경험치는 얻지 못했다.",
+    name: "이름 없는 심장",
+    level: 8,
+    health: 58,
+    defense: 18,
+    attack: 7,
+    damage: 9,
+    experience: 340,
+    description:
+      "남겨진 기억을 놓지 못하는 장치의 마지막 형체. 은사슬을 끊어 각각의 이름으로 돌려보내야 한다.",
+  },
 };
 
 // 키 attack/power/recover/flee가 버튼·전투 처리·저장 기록을 연결합니다. 문구만 바꿔도 효과는 바뀌지 않습니다.
@@ -85,5 +163,5 @@ export const COMBAT_ACTIONS = {
     name: "응급 처치",
     detail: "기력 4 + 레벨 회복 · 전투당 2회 · 적도 행동",
   },
-  flee: { name: "야영지로 후퇴", detail: "항상 성공 · 경험치 없음" },
+  flee: { name: "안전한 곳으로 후퇴", detail: "항상 성공 · 경험치 없음" },
 };
