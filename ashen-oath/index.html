@@ -18,7 +18,22 @@
       <div class="edition">
         A SOLO TABLETOP ADVENTURE <span id="act-label">제1막 · 서리여울</span>
       </div>
-      <button id="help" class="quiet">플레이 안내 <span>↗</span></button>
+      <div class="topbar-actions">
+        <!-- 화면 설정은 모험 기록과 별도로 보관해 새 게임에서도 유지합니다. -->
+        <div class="reading-settings">
+          <label for="text-size">글자 크기</label>
+          <select id="text-size">
+            <option value="90">작게 · 90%</option>
+            <option value="100" selected>보통 · 100%</option>
+            <option value="115">크게 · 115%</option>
+            <option value="130">아주 크게 · 130%</option>
+          </select>
+          <span id="reading-settings-message" role="status" hidden>
+            글자 크기는 이번 접속에만 적용됩니다. 브라우저에서 설정을 저장할 수 없습니다.
+          </span>
+        </div>
+        <button id="help" class="quiet">플레이 안내 <span>↗</span></button>
+      </div>
     </header>
     <!-- 게임 본체. 정적인 레이아웃은 HTML에 두고 진행에 따른 내용은 각 View가 채웁니다. -->
     <main>
@@ -330,6 +345,8 @@
       <p>
         위험한 행동은 <strong>d20 + 능력치 ≥ 난이도</strong>로 판정합니다. 20은
         항상 성공, 1은 항상 실패입니다. 선택하면 주사위가 자동으로 굴러갑니다.
+        선택지의 성공 확률은 현재 능력치와 상태 이상, 자연 1·20 규칙을 반영한
+        값이며 주사위를 미리 굴리지 않습니다.
       </p>
       <p>
         초반부의 판정에 실패해도 이야기는 계속됩니다. 기력을 잃거나 단서를 놓칠

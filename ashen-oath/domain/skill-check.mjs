@@ -19,7 +19,7 @@ export class SkillCheck {
   resolve(choice, character) {
     const roll = this.roll();
     const bonus = character.bonusFor(choice.check.stat);
-    const success = this.#isSuccess(roll, bonus, choice.check.dc);
+    const success = SkillCheck.#isSuccess(roll, bonus, choice.check.dc);
     return {
       roll,
       bonus,
@@ -37,6 +37,16 @@ export class SkillCheck {
     };
   }
 
+  /** 실제 판정과 같은 규칙으로 20개 눈을 세어 성공 확률(%)을 구합니다. 주사위나 게임 상태를 바꾸지 않습니다. */
+  static successChance(choice, character) {
+    const bonus = character.bonusFor(choice.check.stat);
+    let successes = 0;
+    for (let roll = 1; roll <= SkillCheck.DICE_SIDES; roll++) {
+      if (SkillCheck.#isSuccess(roll, bonus, choice.check.dc)) successes++;
+    }
+    return successes * (100 / SkillCheck.DICE_SIDES);
+  }
+
   /** 난수에 20을 곱해 버린 뒤 1을 더하면 1~20입니다. 잘못된 난수 공급자는 오류로 드러냅니다. */
   roll() {
     const roll = Math.floor(this.#random() * SkillCheck.DICE_SIDES) + 1;
@@ -47,7 +57,7 @@ export class SkillCheck {
   }
 
   /** 자연 20·자연 1을 합계보다 먼저 적용합니다. 그 외에는 합계가 난이도 이상이면 성공입니다. */
-  #isSuccess(roll, bonus, difficulty) {
+  static #isSuccess(roll, bonus, difficulty) {
     if (roll === SkillCheck.DICE_SIDES) return true;
     if (roll === 1) return false;
     return roll + bonus >= difficulty;

@@ -8,6 +8,7 @@ import { STORY_PEOPLE } from "../data/story-revision.mjs";
 import { STAT_NAMES } from "../data/origins.mjs";
 import { ACT_PRESENTATION } from "../data/campaign.mjs";
 import { FAILURE_STATUSES, STATUS_EFFECTS } from "../data/status-effects.mjs";
+import { SkillCheck } from "../domain/skill-check.mjs";
 import { createElement, getElement } from "./dom.mjs";
 
 export class StoryView {
@@ -185,6 +186,13 @@ export class StoryView {
       createElement("span", choice.detail, "choice-detail"),
     );
     if (choice.check) {
+      description.append(
+        createElement(
+          "span",
+          `성공 확률 ${SkillCheck.successChance(choice, character)}% · 현재 능력치·상태 반영`,
+          "check-chance",
+        ),
+      );
       const effect = STATUS_EFFECTS[FAILURE_STATUSES[choice.check.stat]];
       description.append(
         createElement(

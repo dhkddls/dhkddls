@@ -6,6 +6,8 @@
 /* 공통 디자인 변수. --gold 같은 CSS 변수를 바꾸면 여러 패널의 색상이 함께 바뀝니다. color-scheme은 기본 컨트롤도 어두운 배경에 맞춥니다. */
 :root {
   color-scheme: dark;
+  /* 브라우저 기본 글자 크기를 존중하고 사용자가 선택한 배율을 적용합니다. */
+  font-size: calc(100% * var(--text-scale, 1));
   --bg: #101614;
   --panel: #171f1b;
   --line: #30382d;
@@ -26,7 +28,7 @@ body {
     radial-gradient(ellipse at 50% 0%, #24302966, transparent 60%), var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.7;
 }
 button,
@@ -66,6 +68,7 @@ a {
 }
 /* 상단 로고·막 표시·도움말. Flex로 양끝을 배치하며 화면 너비에 맞게 간격을 유지합니다. */
 .topbar {
+  flex-wrap: wrap;
   min-height: 96px;
   padding: 20px 5.3%;
   border-bottom: 1px solid var(--line);
@@ -80,25 +83,25 @@ a {
   align-items: center;
   gap: 14px;
   font-family: var(--serif);
-  font-size: 23px;
+  font-size: 1.4375rem;
   letter-spacing: 3px;
 }
 .brand small {
   display: block;
-  font: 8px var(--sans);
+  font: 0.5rem var(--sans);
   letter-spacing: 3px;
   color: var(--gold);
   margin-top: 3px;
 }
 .sigil {
-  font-size: 38px;
+  font-size: 2.375rem;
   color: var(--gold);
   line-height: 1;
 }
 /* 넓은 화면에서만 보이는 게임 형식과 현재 막 표시입니다. */
 .edition {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
   letter-spacing: 2px;
 }
 .edition span {
@@ -109,7 +112,7 @@ a {
 .quiet {
   border: 0;
   background: transparent;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   padding: 8px;
 }
@@ -133,7 +136,7 @@ main {
 }
 /* 장·막·분류처럼 제목 위에 붙는 작은 표제의 공통 스타일입니다. */
 .eyebrow {
-  font-size: 9px;
+  font-size: 0.5625rem;
   letter-spacing: 2px;
   font-weight: 500;
   color: var(--gold);
@@ -141,14 +144,14 @@ main {
 }
 .masthead h1 {
   font-family: var(--serif);
-  font-size: clamp(27px, 2.5vw, 38px);
+  font-size: clamp(1.6875rem, calc(2.5vw * var(--text-scale, 1)), 2.375rem);
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: -1px;
   margin: 0;
 }
 .intro-copy {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.9;
   color: var(--muted);
   padding-bottom: 3px;
@@ -172,7 +175,7 @@ main {
   text-align: center;
 }
 .character-panel > .eyebrow {
-  font-size: 8px;
+  font-size: 0.5rem;
   letter-spacing: 2px;
   color: var(--muted);
 }
@@ -190,7 +193,7 @@ main {
 }
 .portrait > span {
   font-family: Georgia, serif;
-  font-size: 60px;
+  font-size: 3.75rem;
   color: #b6bb9e;
   filter: drop-shadow(0 5px 5px #000);
 }
@@ -203,20 +206,20 @@ main {
 }
 /* 작은 안내 텍스트와 낮은 강조 색상을 재사용합니다. */
 .tiny {
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .muted {
   color: var(--muted);
 }
 .character-panel h2 {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 400;
   letter-spacing: 1px;
   margin: 5px 0;
 }
 .character-subtitle {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   min-height: 34px;
   margin: 8px 0;
@@ -226,7 +229,7 @@ main {
   border: 0;
   background: none;
   color: var(--gold);
-  font-size: 10px;
+  font-size: 0.625rem;
   padding: 6px;
 }
 .text-button span {
@@ -245,10 +248,10 @@ main {
 .health-label {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .health-label strong {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 400;
   color: var(--gold);
 }
@@ -277,18 +280,18 @@ main {
 }
 .stat span {
   display: block;
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--muted);
 }
 .stat strong {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 400;
   color: #ddd7bb;
 }
 /* 소지품 목록의 표제와 목록 여백입니다. */
 .inventory-label {
-  font-size: 9px;
+  font-size: 0.5625rem;
   margin: 25px 0 10px;
   text-align: left;
 }
@@ -298,7 +301,7 @@ main {
   margin: 0;
   list-style: none;
   text-align: left;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
 }
 .inventory li {
@@ -314,7 +317,7 @@ main {
 /* 캐릭터 패널 아래에 표시되는 짧은 인용문입니다. */
 .character-foot {
   font-family: var(--serif);
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.9;
   color: #a2a98d;
   margin: 30px 0 2px;
@@ -355,7 +358,7 @@ main {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: #e3ddc5;
 }
 .location-dot {
@@ -366,7 +369,7 @@ main {
 }
 .coordinates {
   margin-left: auto;
-  font-size: 8px;
+  font-size: 0.5rem;
   letter-spacing: 2px;
   color: #b4bdae;
 }
@@ -381,19 +384,19 @@ main {
   align-items: center;
 }
 .chapter-line .eyebrow {
-  font-size: 9px;
+  font-size: 0.5625rem;
   letter-spacing: 1.8px;
   margin: 0;
 }
 .chapter-line > span {
   font-family: var(--serif);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: #858e70;
 }
 /* 장면 제목. clamp로 화면 크기에 맞춰 글자 크기를 제한 범위 안에서 조절합니다. */
 .story-content h2 {
   font-family: var(--serif);
-  font-size: clamp(23px, 2.2vw, 30px);
+  font-size: clamp(1.4375rem, calc(2.2vw * var(--text-scale, 1)), 1.875rem);
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: -0.5px;
@@ -404,7 +407,7 @@ main {
 blockquote {
   font-family: var(--serif);
   color: var(--gold);
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 0 0 23px;
   padding: 5px 0 5px 15px;
   border-left: 2px solid #7e724d;
@@ -412,7 +415,7 @@ blockquote {
 /* 이야기 문단. 긴 줄 간격과 단어 단위 줄바꿈으로 한국어 본문을 읽기 쉽게 합니다. */
 .prose {
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 2.15;
   color: #bdc4b5;
   word-break: keep-all;
@@ -433,7 +436,7 @@ blockquote {
   padding: 15px 17px;
   text-align: left;
   display: grid;
-  grid-template-columns: 25px 1fr 14px;
+  grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
   align-items: center;
   gap: 9px;
   width: 100%;
@@ -445,17 +448,18 @@ blockquote {
   transform: translateX(2px);
 }
 .choice-index {
+  white-space: nowrap;
   font-family: var(--serif);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--gold);
 }
 .choice-title {
-  font-size: 12px;
+  font-size: 0.75rem;
   display: block;
   color: #e0dfc9;
 }
 .choice-detail {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: #a3af92;
   display: block;
   margin-top: 3px;
@@ -471,7 +475,7 @@ blockquote {
   align-items: center;
   padding: 10px 24px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.5625rem;
   gap: 10px;
 }
 .story-footer > span {
@@ -482,7 +486,7 @@ blockquote {
   margin-left: 4px;
 }
 .story-footer .quiet {
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 /* 오른쪽 기록서 패널의 내부 여백입니다. 공통 테두리는 위쪽 규칙을 공유합니다. */
 .journal-panel {
@@ -493,11 +497,11 @@ blockquote {
   justify-content: space-between;
   align-items: center;
   font-family: var(--serif);
-  font-size: 16px;
+  font-size: 1rem;
 }
 .journal-mark {
   color: var(--gold);
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 /* 여정·세계관·기록 탭. 선택 여부는 JavaScript가 aria-selected로 갱신합니다. */
 .tabs {
@@ -512,7 +516,7 @@ blockquote {
   border-bottom: 2px solid transparent;
   background: none;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   flex: 1;
 }
 /* 현재 선택한 탭에 금색 밑줄을 표시합니다. 접근성 속성과 시각 표시가 같은 상태를 사용합니다. */
@@ -527,18 +531,18 @@ blockquote {
 }
 /* 메인 퀘스트의 분류·제목·설명과 진행 목표 스타일입니다. */
 .quest-category {
-  font-size: 8px;
+  font-size: 0.5rem;
   letter-spacing: 2px;
   color: var(--gold);
 }
 .quest-title {
   font-family: var(--serif);
   font-weight: 400;
-  font-size: 17px;
+  font-size: 1.0625rem;
   margin: 9px 0 12px;
 }
 .quest-desc {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.9;
   color: var(--muted);
 }
@@ -549,7 +553,7 @@ blockquote {
   margin: 20px 0 22px;
 }
 .objectives li {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #b8c1ab;
   padding: 9px 0;
   border-bottom: 1px solid #30382d80;
@@ -560,14 +564,14 @@ blockquote {
   color: var(--gold);
 }
 .clue-heading {
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--gold);
   letter-spacing: 1px;
   margin: 24px 0 12px;
 }
 /* 수집한 단서를 작은 테두리 카드로 표시합니다. */
 .clue {
-  font-size: 10px;
+  font-size: 0.625rem;
   background: #2e3525;
   border: 1px solid #444d35;
   padding: 7px 9px;
@@ -583,11 +587,11 @@ blockquote {
   color: var(--gold);
 }
 .journal-bottom > span {
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 .journal-bottom p {
   font-family: var(--serif);
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 2;
   color: var(--muted);
 }
@@ -600,7 +604,7 @@ details {
 /* 세계관 항목의 클릭 가능한 제목입니다. 오른쪽 기호는 가상 요소로 표시합니다. */
 summary {
   font-family: var(--serif);
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
   color: #d3d2b7;
   list-style: none;
@@ -619,20 +623,20 @@ details[open] summary:after {
   content: "−";
 }
 .lore-tag {
-  font: 8px var(--sans);
+  font: 0.5rem var(--sans);
   color: var(--gold);
   display: block;
   margin-bottom: 4px;
 }
 details p {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.95;
   color: var(--muted);
   word-break: keep-all;
   margin-bottom: 0;
 }
 .lore-hint {
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 1.8;
   color: var(--muted);
   margin-top: 0;
@@ -646,21 +650,21 @@ details p {
 }
 .log-item strong {
   font-family: var(--serif);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 400;
 }
 .log-item p {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   line-height: 1.9;
 }
 .log-roll {
   color: var(--gold);
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 /* 페이지 하단의 작품명·현재 막·짧은 안내입니다. */
 .page-footer {
-  font-size: 8px;
+  font-size: 0.5rem;
   color: var(--muted);
   letter-spacing: 1px;
   display: flex;
@@ -698,22 +702,22 @@ details p {
   color: #1a2019;
   clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%);
   font-family: var(--serif);
-  font-size: 23px;
+  font-size: 1.4375rem;
 }
 .roll-label {
   color: var(--gold);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .roll-result p {
   font-family: var(--serif);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.9;
   color: #c9ccba;
   margin: 7px 0 0;
 }
 /* 막 종료 안내와 주요 행동 버튼의 스타일입니다. */
 .ending-note {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--gold);
   line-height: 1.9;
   border-top: 1px solid var(--line);
@@ -724,7 +728,7 @@ details p {
   border: 1px solid #c3ab77;
   color: #171e16;
   padding: 12px 18px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .primary:hover {
   background: #d1b577;
@@ -751,11 +755,11 @@ dialog::backdrop {
 dialog h2 {
   font-family: var(--serif);
   font-weight: 400;
-  font-size: 26px;
+  font-size: 1.625rem;
   margin-top: 10px;
 }
 dialog > p:not(.eyebrow) {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 2;
   color: #b6c0ac;
 }
@@ -764,10 +768,10 @@ dialog > p:not(.eyebrow) {
   position: absolute;
   right: 15px;
   top: 7px;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 .dialog-intro {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-bottom: 25px;
 }
@@ -787,17 +791,17 @@ dialog > p:not(.eyebrow) {
 }
 .origin-card strong {
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: 1.1875rem;
   font-weight: 400;
   color: #dfdac0;
 }
 .origin-card p {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin: 8px 0;
 }
 .origin-card small {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--gold);
 }
 /* 대화상자 하단의 취소·확인 버튼을 오른쪽으로 모읍니다. */
@@ -810,7 +814,7 @@ dialog > p:not(.eyebrow) {
 /* 기력 1의 부상 안내를 일반 문단과 구분합니다. */
 .wounded {
   color: #d0a28b;
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.9;
   padding: 10px;
   border-left: 2px solid #a2775c;
@@ -828,7 +832,7 @@ dialog > p:not(.eyebrow) {
     padding: 34px 42px;
   }
   .prose {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
 }
 /* 작은 데스크톱: 세 열을 유지하되 패널 너비·여백·그림 높이를 줄입니다. */
@@ -857,13 +861,13 @@ dialog > p:not(.eyebrow) {
     display: none;
   }
   .character-panel h2 {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
   .scene-art {
     height: 215px;
   }
   .prose {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .portrait {
     width: 100px;
@@ -905,7 +909,7 @@ dialog > p:not(.eyebrow) {
     margin-top: 30px;
   }
   .intro-copy {
-    font-size: 10px;
+    font-size: 0.625rem;
   }
 }
 /* 모바일: 한 열 레이아웃으로 바꾸고 캐릭터 정보를 가로 요약 카드로 재배치합니다. */
@@ -918,16 +922,16 @@ dialog > p:not(.eyebrow) {
     min-height: 80px;
   }
   .brand {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .sigil {
-    font-size: 30px;
+    font-size: 1.875rem;
   }
   .masthead {
     margin: 27px 0 24px;
   }
   .masthead h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .intro-copy {
     display: none;
@@ -938,7 +942,7 @@ dialog > p:not(.eyebrow) {
   }
   .character-panel {
     display: grid;
-    grid-template-columns: 55px 1fr auto;
+    grid-template-columns: 55px minmax(0, 1fr);
     text-align: left;
     gap: 0 15px;
     padding: 16px;
@@ -960,7 +964,7 @@ dialog > p:not(.eyebrow) {
     margin: 0;
   }
   .portrait > span {
-    font-size: 30px;
+    font-size: 1.875rem;
   }
   .portrait-ring {
     inset: 4px;
@@ -968,12 +972,12 @@ dialog > p:not(.eyebrow) {
   .character-panel > .tiny {
     grid-column: 2;
     margin: 0;
-    font-size: 9px;
+    font-size: 0.5625rem;
   }
   .character-panel h2 {
     grid-column: 2;
     grid-row: 2;
-    font-size: 18px;
+    font-size: 1.125rem;
     margin: 0;
   }
   .text-button {
@@ -981,17 +985,20 @@ dialog > p:not(.eyebrow) {
     grid-row: 3;
     justify-self: start;
     padding: 0;
-    font-size: 9px;
+    font-size: 0.5625rem;
   }
   .health-label {
-    grid-column: 3;
-    grid-row: 1;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: 12px;
+    justify-content: space-between;
     gap: 10px;
     align-self: center;
   }
   .stats {
-    grid-column: 3;
-    grid-row: 2/4;
+    grid-column: 1 / -1;
+    grid-row: 5;
+    margin-top: 8px;
     gap: 5px;
   }
   .stat {
@@ -999,10 +1006,10 @@ dialog > p:not(.eyebrow) {
     text-align: center;
   }
   .stat strong {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .stat span {
-    font-size: 8px;
+    font-size: 0.5rem;
   }
   .scene-art {
     height: 205px;
@@ -1011,22 +1018,22 @@ dialog > p:not(.eyebrow) {
     padding: 24px 21px;
   }
   .story-content h2 {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
   .prose {
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 2.15;
   }
   .choice {
     padding: 13px 12px;
-    grid-template-columns: 20px 1fr 10px;
+    grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
     gap: 7px;
   }
   .choice-title {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .choice-detail {
-    font-size: 9px;
+    font-size: 0.5625rem;
   }
   .journal-panel {
     grid-column: 1;
@@ -1043,7 +1050,7 @@ dialog > p:not(.eyebrow) {
     padding-top: 20px;
   }
   .page-footer {
-    font-size: 7px;
+    font-size: 0.4375rem;
     letter-spacing: 0.5px;
     padding-bottom: 20px;
   }
@@ -1058,7 +1065,7 @@ dialog > p:not(.eyebrow) {
     padding: 28px 23px;
   }
   .dialog-intro {
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
   .roll-result {
     grid-template-columns: 39px 1fr;
@@ -1068,10 +1075,10 @@ dialog > p:not(.eyebrow) {
   .die {
     width: 36px;
     height: 41px;
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .roll-label {
-    font-size: 10px;
+    font-size: 0.625rem;
   }
 }
 /* 운영체제의 동작 줄이기 설정을 존중해 전환과 부드러운 스크롤을 비활성화합니다. */
@@ -1095,7 +1102,7 @@ dialog > p:not(.eyebrow) {
   margin: 20px 0;
 }
 .ending-summary h3 {
-  font: 21px/1.6 var(--serif);
+  font: 1.3125rem/1.6 var(--serif);
   font-weight: 400;
   color: var(--gold);
   margin-top: 0;
@@ -1104,7 +1111,7 @@ dialog > p:not(.eyebrow) {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .ending-statistics dt {
   color: var(--muted);
@@ -1116,7 +1123,7 @@ dialog > p:not(.eyebrow) {
 }
 .ending-credits {
   color: var(--gold);
-  font-size: 10px;
+  font-size: 0.625rem;
   letter-spacing: 2px;
   text-align: center;
   border-top: 1px solid var(--line);
@@ -1132,7 +1139,7 @@ dialog > p:not(.eyebrow) {
 }
 .save-message {
   color: #dfb898;
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 8px 20px;
 }
 @media (max-width: 620px) {
@@ -1142,7 +1149,7 @@ dialog > p:not(.eyebrow) {
   .ending-statistics {
     grid-template-columns: 90px minmax(0, 1fr);
     gap: 10px;
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
 }
 /* 레벨·경험치 영역. 기력 막대와 별도로 성장 진행을 표시합니다. */
@@ -1154,12 +1161,12 @@ dialog > p:not(.eyebrow) {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--muted);
 }
 .experience-label strong {
   color: var(--gold);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .experience-track {
   height: 4px;
@@ -1178,7 +1185,7 @@ dialog > p:not(.eyebrow) {
 .encounter-warning {
   display: block;
   margin-top: 5px;
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .encounter-reward {
   color: #cbb989;
@@ -1194,23 +1201,23 @@ dialog > p:not(.eyebrow) {
   border: 1px solid #666649;
 }
 .combat-panel h3 {
-  font: 22px/1.6 var(--serif);
+  font: 1.375rem/1.6 var(--serif);
   color: #e4d9ba;
   margin: 8px 0 16px;
   outline: none;
 }
 .combat-description {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.9;
 }
 .combat-health {
   color: #d6d7c4;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .combat-reward {
   color: var(--gold);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.9;
 }
 /* 적 기력은 HTML progress로 표현합니다. 아래 WebKit 규칙은 해당 브라우저의 기본 막대 색을 맞춥니다. */
@@ -1233,12 +1240,12 @@ dialog > p:not(.eyebrow) {
 }
 .combat-log strong {
   color: #c6c8ad;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
 }
 .combat-log p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.9;
   margin: 5px 0 12px;
 }
@@ -1264,12 +1271,12 @@ dialog > p:not(.eyebrow) {
   display: block;
 }
 .combat-action strong {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #dfdcc4;
 }
 .combat-action span {
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -1284,7 +1291,7 @@ dialog > p:not(.eyebrow) {
   border: 1px solid var(--gold);
   background: #343b22;
   color: #e2d2a2;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.9;
 }
 #ending-tools .primary {
@@ -1300,7 +1307,7 @@ dialog > p:not(.eyebrow) {
     padding: 16px;
   }
   .combat-panel h3 {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .combat-actions {
     grid-template-columns: 1fr;
@@ -1315,13 +1322,13 @@ dialog > p:not(.eyebrow) {
   text-align: left;
 }
 .status-effects h3 {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   color: var(--gold);
   margin: 0 0 10px;
 }
 .status-clear {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   margin: 0;
 }
@@ -1332,14 +1339,14 @@ dialog > p:not(.eyebrow) {
   border-left: 2px solid #bf8e6d;
 }
 .status-card strong {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #e4b99b;
 }
 .status-card p,
 .status-card small,
 .status-help {
   display: block;
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 1.8;
   color: #c3b5a5;
   margin: 5px 0 0;
@@ -1351,13 +1358,13 @@ dialog > p:not(.eyebrow) {
 .status-event,
 .check-risk {
   display: block;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: #dfb898;
   line-height: 1.8;
   margin-top: 5px;
 }
 .combat-modifiers {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.8;
   color: #c9b89e;
 }
@@ -1401,7 +1408,7 @@ dialog > p:not(.eyebrow) {
   margin: 0 0 6px;
 }
 .story-brief h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 400;
   line-height: 1.8;
   color: #e0d7b7;
@@ -1409,7 +1416,7 @@ dialog > p:not(.eyebrow) {
 }
 .story-brief > p:not(.eyebrow),
 .story-brief details {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.9;
   color: #abb5a5;
 }
@@ -1430,13 +1437,13 @@ dialog > p:not(.eyebrow) {
   margin: 0 0 5px;
 }
 .enemy-intent h4 {
-  font-size: 19px;
+  font-size: 1.1875rem;
   color: #dfd5b3;
   margin: 0 0 7px;
   font-weight: 400;
 }
 .enemy-intent > p:last-child {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
   margin: 0;
 }
@@ -1448,12 +1455,12 @@ dialog > p:not(.eyebrow) {
 .combat-action small {
   display: block;
   color: #c2b39c;
-  font-size: 10px;
+  font-size: 0.625rem;
   margin-top: 6px;
 }
 .combat-supplies {
   margin-top: 20px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--gold);
 }
 .combat-supplies summary {
@@ -1468,13 +1475,13 @@ dialog > p:not(.eyebrow) {
   border-top: 1px solid var(--line);
 }
 .save-slot h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 400;
   color: var(--gold);
   margin: 0 0 8px;
 }
 .save-slot p {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.8;
   margin: 0 0 10px;
 }
@@ -1485,7 +1492,7 @@ dialog > p:not(.eyebrow) {
   width: min(620px, calc(100vw - 32px));
 }
 #slots-message {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #dacaa5;
 }
 @media (max-width: 620px) {
@@ -1493,9 +1500,61 @@ dialog > p:not(.eyebrow) {
     padding: 12px 14px;
   }
   .story-brief h3 {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .enemy-intent {
     padding: 13px;
   }
+}
+
+/* 글자 크기 선택은 키보드와 터치로 조작하며 작은 화면에서는 줄을 바꿉니다. */
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-left: auto;
+  max-width: 100%;
+}
+.reading-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.75rem;
+}
+.reading-settings label {
+  color: var(--muted);
+}
+.reading-settings select {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 44px;
+  max-width: 100%;
+}
+.reading-settings select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+#reading-settings-message {
+  flex-basis: 100%;
+  max-width: 32ch;
+  color: var(--gold);
+}
+/* 성공 확률은 색상에만 기대지 않고 숫자와 설명을 함께 제공합니다. */
+.check-chance {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: #e2cb98;
+}
+.choice > span,
+.game-layout > *,
+.character-panel > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

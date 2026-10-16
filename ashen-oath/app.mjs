@@ -7,6 +7,7 @@ import { Adventure } from "./engine.mjs";
 import { SaveRepository } from "./save-repository.mjs";
 import { JournalExporter } from "./journal-exporter.mjs";
 import { GameView } from "./ui/game-view.mjs";
+import { ReadingSettings } from "./ui/reading-settings.mjs";
 
 /** 사용자 행동을 게임 진행 → 저장 → 화면 갱신 순서로 연결합니다. */
 class GameApplication {
@@ -202,4 +203,5 @@ class GameApplication {
 }
 
 // 모듈을 불러온 뒤 한 번 실행합니다. 실제 DOM 참조는 index.html이 파싱된 이후에 이루어집니다.
+new ReadingSettings().start();
 new GameApplication().start();
